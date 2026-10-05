@@ -1,0 +1,37 @@
+:root{--bg:#14172b;--card:#1f2340;--line:#363b66;--text:#eceefb;--muted:#9aa0c7;--accent:#7c5cff;--good:#2ecc71;--bad:#e74c3c}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:1.5rem 1rem;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+#app{width:100%;max-width:640px}
+.screen{display:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.5rem}
+.screen.active{display:block}
+h1{margin:0 0 .5rem;color:var(--accent)}
+h2{font-size:1.4rem;margin:1rem 0}
+.lead,.hint,small{color:var(--muted)}
+.field{display:flex;justify-content:space-between;align-items:center;margin:1rem 0}
+select,input{padding:.6rem;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+input{width:100%;margin-bottom:1rem}
+fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 1.2rem}
+.chk{display:inline-block;margin:.3rem .8rem .3rem 0}
+.btn{padding:.7rem 1.2rem;border:none;border-radius:8px;background:var(--accent);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.btn.good{background:var(--good)} .btn.bad{background:var(--bad)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);margin-top:.8rem;font-weight:400}
+.btns{display:flex;gap:.8rem} .btns .btn{flex:1}
+.top,.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.9rem}
+.timer{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin:.6rem 0}
+.timer i{display:block;height:100%;width:100%;background:var(--accent)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem}
+.cmp div{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.7rem}
+.cmp small,.cmp b{display:block} .cmp b{margin-top:.3rem}
+.big{font-size:1.6rem;font-weight:700}
+#r-list{list-style:none;padding:0}
+#r-list li{padding:.6rem 0;border-bottom:1px solid var(--line)}
+@media(max-width:480px){.cmp{grid-template-columns:1fr}.btns{flex-direction:column}}
+
+/* --- Salon multijoueur --- */
+.or{text-align:center;color:var(--muted);margin:1rem 0}
+.join{display:flex;gap:.6rem} .join input{margin:0;text-transform:uppercase;text-align:center;letter-spacing:.3em;font-weight:700}
+.code{font-size:3rem;font-weight:800;letter-spacing:.4em;text-align:center;color:var(--accent);margin:.2rem 0 1rem}
+#players,#started-players{list-style:none;padding:0;margin:0 0 1rem}
+#players li,#started-players li{padding:.5rem .7rem;margin-bottom:.4rem;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+#error{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);background:var(--bad);color:#fff;padding:.7rem 1.2rem;border-radius:8px;max-width:90%}

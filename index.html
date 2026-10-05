@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quizz Culture</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main id="app">
+
+  <section id="screen-home" class="screen active">
+    <h1>Quizz Culture</h1>
+    <p class="lead">Joue entre amis : le chef du salon corrige les réponses.</p>
+    <label class="field">Ton pseudo
+      <input id="pseudo" maxlength="20" placeholder="Pseudo" autocomplete="off">
+    </label>
+    <button id="create" class="btn" disabled>Créer un salon</button>
+    <div class="or">ou</div>
+    <div class="join">
+      <input id="code" maxlength="4" placeholder="CODE" autocomplete="off">
+      <button id="join" class="btn" disabled>Rejoindre</button>
+    </div>
+  </section>
+
+  <section id="screen-lobby" class="screen">
+    <p class="lead">Code du salon</p>
+    <div id="room-code" class="code"></div>
+    <h2>Joueurs <small id="count"></small></h2>
+    <ul id="players"></ul>
+    <div id="host-box" hidden>
+      <label class="field">Nombre de questions
+        <select id="nb"><option>5</option><option selected>10</option><option>20</option></select>
+      </label>
+      <fieldset><legend>Catégories</legend><div id="cats"></div></fieldset>
+      <button id="start" class="btn">Lancer la partie</button>
+    </div>
+    <p id="wait-msg" class="lead" hidden>En attente du lancement par le chef du salon…</p>
+    <button id="leave" class="btn ghost">Quitter le salon</button>
+  </section>
+
+  <section id="screen-started" class="screen">
+    <h1>La partie est lancée !</h1>
+    <p class="lead">Les questions arrivent dans la prochaine étape.</p>
+    <ul id="started-players"></ul>
+  </section>
+
+</main>
+<div id="error" hidden></div>
+<script type="module" src="js/lobby.js"></script>
+</body>
+</html>
