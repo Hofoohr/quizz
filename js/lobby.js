@@ -1,6 +1,7 @@
 import { db, signIn, ref, get, set, update, remove, onValue, onDisconnect, serverTimestamp } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
 import * as Play from "./play.js";
+import * as Corr from "./correction.js";
 
 const MIN_PLAYERS = 1;   // mets 3 quand tu auras fini de tester seul
 const MAX_PLAYERS = 10;  // limite vérifiée par l'application (les règles de la base ne peuvent pas compter les joueurs)
@@ -107,7 +108,8 @@ function render() {
       return showScreen('play');
     }
     Play.stop();
-    return showScreen('correction');
+    Corr.enter({ code, uid, hostUid: meta.hostUid, isHost: meta.hostUid === uid, phase: meta.phase });
+    return showScreen(meta.phase === 'results' ? 'results' : 'correction');
   }
   const isHost = meta.hostUid === uid;
   $('players').innerHTML = ids.map(id =>
@@ -139,6 +141,27 @@ async function leaveRoom() {
   showScreen('home');
 }
 
+// Quitter une partie en cours (avec confirmation) pour pouvoir en lancer une nouvelle.
+async function exitRoom(endGame) {
+  const c = code;
+  unsubs.forEach(u => u()); unsubs = [];
+  Play.stop(); Corr.stop();
+  if (endGame) {   // le chef qui part met fin à la partie : les résultats s'affichent chez les autres
+    try { await update(ref(db, `rooms/${c}/meta`), { phase: 'results' }); } catch (e) { console.error(e); }
+  }
+  store('room', null);
+  code = null; meta = null; players = {}; playerRef = null; started = false;
+  showScreen('home');
+}
+
+async function leaveGame() {
+  const isHost = !!meta && meta.hostUid === uid;
+  const ok = confirm(isHost
+    ? "Tu es le chef du salon : si tu quittes, la partie s'arrête pour tout le monde. Quitter ?"
+    : "Quitter la partie ? Tu pourras la rejoindre à nouveau avec le code du salon.");
+  if (ok) await exitRoom(isHost && meta.phase !== 'results');
+}
+
 // --- Démarrage ---
 $('pseudo').value = load('pseudo') || '';
 const cats = [...new Set(QUESTIONS.map(q => q.cat))];
@@ -147,6 +170,8 @@ $('create').onclick = createRoom;
 $('join').onclick = joinRoom;
 $('start').onclick = startGame;
 $('leave').onclick = leaveRoom;
+document.querySelectorAll('.leave-game').forEach(b => { b.onclick = leaveGame; });
+$('r-home').onclick = () => exitRoom(false);
 
 signIn().then(user => {
   uid = user.uid;

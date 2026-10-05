@@ -56,11 +56,31 @@
       <h2>Questions terminées !</h2>
       <p class="lead">En attente de la correction…</p>
     </div>
+    <button class="btn ghost leave-game">Quitter la partie</button>
   </section>
 
   <section id="screen-correction" class="screen">
-    <h1>Correction</h1>
-    <p class="lead">La correction arrive à la prochaine étape.</p>
+    <div class="top"><span id="c-progress"></span><span id="c-pts"></span></div>
+    <p id="c-prep" class="lead">Préparation de la correction…</p>
+    <div id="c-body" hidden>
+      <div class="meta"><span id="c-cat"></span></div>
+      <h2 id="c-text"></h2>
+      <div class="expected"><small>Réponse attendue</small><b id="c-expected"></b></div>
+      <ul id="c-list"></ul>
+      <div id="c-host" class="btns" hidden>
+        <button id="c-prev" class="btn ghost">← Précédente</button>
+        <button id="c-next" class="btn">Question suivante →</button>
+      </div>
+      <p id="c-wait" class="lead" hidden>Le chef du salon fait défiler la correction…</p>
+    </div>
+    <button class="btn ghost leave-game">Quitter la partie</button>
+  </section>
+
+  <section id="screen-results" class="screen">
+    <h1>Résultats</h1>
+    <ol id="r-rank"></ol>
+    <button id="r-home" class="btn">Nouvelle partie</button>
+    <button class="btn ghost leave-game">Quitter la partie</button>
   </section>
 
 </main>
