@@ -1,5 +1,6 @@
 import { db, signIn, ref, get, set, update, remove, onValue, onDisconnect, serverTimestamp } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
+import * as Play from "./play.js";
 
 const MIN_PLAYERS = 1;   // mets 3 quand tu auras fini de tester seul
 const MAX_PLAYERS = 10;  // limite vérifiée par l'application (les règles de la base ne peuvent pas compter les joueurs)
@@ -21,11 +22,13 @@ function showError(msg) {
   setTimeout(() => { e.hidden = true; }, 4000);
 }
 const randomCode = () => Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+const store = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+const load = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 
 function getName() {
   const n = $('pseudo').value.trim().slice(0, 20);
   if (!n) { showError('Choisis un pseudo.'); $('pseudo').focus(); return null; }
-  try { localStorage.setItem('pseudo', n); } catch (e) {}
+  store('pseudo', n);
   return n;
 }
 
@@ -44,7 +47,7 @@ async function createRoom() {
         await set(ref(db, `rooms/${c}/meta`), { hostUid: uid, phase: 'lobby' });
         code = c;
         await joinAsPlayer(name);
-        return enterLobby();
+        return enterRoom();
       } catch (e) { if (i === 4) throw e; }   // code déjà pris : on en tire un autre
     }
   } catch (e) { console.error(e); showError('Impossible de créer le salon.'); }
@@ -57,26 +60,41 @@ async function joinRoom() {
   try {
     const snap = await get(ref(db, `rooms/${c}/meta`));
     if (!snap.exists()) { showError('Salon introuvable.'); return; }
-    if (snap.val().phase !== 'lobby') { showError('La partie a déjà commencé.'); return; }
+    if (snap.val().phase !== 'lobby') {
+      // Partie en cours : seuls les joueurs déjà inscrits peuvent revenir.
+      const me = await get(ref(db, `rooms/${c}/players/${uid}`));
+      if (!me.exists()) { showError('La partie a déjà commencé.'); return; }
+      code = c; playerRef = ref(db, `rooms/${c}/players/${uid}`);
+      return enterRoom();
+    }
     const pSnap = await get(ref(db, `rooms/${c}/players`));
     if (pSnap.exists() && Object.keys(pSnap.val()).length >= MAX_PLAYERS) { showError('Le salon est complet.'); return; }
     code = c;
     await joinAsPlayer(name);
-    enterLobby();
+    enterRoom();
   } catch (e) { console.error(e); showError('Impossible de rejoindre (salon complet ?).'); }
 }
 
-function enterLobby() {
+function enterRoom() {
   started = false;
+  store('room', code);
   $('room-code').textContent = code;
   showScreen('lobby');
   unsubs.push(onValue(ref(db, `rooms/${code}/meta`), s => { meta = s.val(); render(); }));
   unsubs.push(onValue(ref(db, `rooms/${code}/players`), s => { players = s.val() || {}; render(); }));
 }
 
-function playerList(ids) {
-  return ids.map(id =>
-    `<li>${id === meta.hostUid ? '👑 ' : ''}${esc(players[id].name)}${id === uid ? ' <small>(toi)</small>' : ''}</li>`).join('');
+// Après un rechargement de page, on revient dans la partie en cours.
+async function tryResume() {
+  const c = load('room');
+  if (!c) return;
+  try {
+    const [m, me] = await Promise.all([get(ref(db, `rooms/${c}/meta`)), get(ref(db, `rooms/${c}/players/${uid}`))]);
+    if (m.exists() && me.exists() && m.val().phase !== 'lobby') {
+      code = c; playerRef = ref(db, `rooms/${c}/players/${uid}`);
+      enterRoom();
+    } else store('room', null);
+  } catch (e) { console.error(e); }
 }
 
 function render() {
@@ -84,11 +102,16 @@ function render() {
   const ids = Object.keys(players);
   if (meta.phase !== 'lobby') {
     if (!started) { started = true; onDisconnect(playerRef).cancel(); }   // en partie, quitter n'efface plus le joueur
-    $('started-players').innerHTML = playerList(ids);
-    return showScreen('started');
+    if (meta.phase === 'questions') {
+      Play.enter({ code, uid, isHost: meta.hostUid === uid, startAt: meta.startAt });
+      return showScreen('play');
+    }
+    Play.stop();
+    return showScreen('correction');
   }
   const isHost = meta.hostUid === uid;
-  $('players').innerHTML = playerList(ids);
+  $('players').innerHTML = ids.map(id =>
+    `<li>${id === meta.hostUid ? '👑 ' : ''}${esc(players[id].name)}${id === uid ? ' <small>(toi)</small>' : ''}</li>`).join('');
   $('count').textContent = `${ids.length} / ${MAX_PLAYERS}`;
   $('host-box').hidden = !isHost;
   $('wait-msg').hidden = isHost;
@@ -111,12 +134,13 @@ async function startGame() {
 async function leaveRoom() {
   unsubs.forEach(u => u()); unsubs = [];
   try { onDisconnect(playerRef).cancel(); await remove(playerRef); } catch (e) {}
+  store('room', null);
   code = null; meta = null; players = {}; playerRef = null; started = false;
   showScreen('home');
 }
 
 // --- Démarrage ---
-$('pseudo').value = (() => { try { return localStorage.getItem('pseudo') || ''; } catch (e) { return ''; } })();
+$('pseudo').value = load('pseudo') || '';
 const cats = [...new Set(QUESTIONS.map(q => q.cat))];
 $('cats').innerHTML = cats.map(c => `<label class="chk"><input type="checkbox" value="${c}" checked> ${c}</label>`).join('');
 $('create').onclick = createRoom;
@@ -128,6 +152,7 @@ signIn().then(user => {
   uid = user.uid;
   $('create').disabled = false;
   $('join').disabled = false;
+  tryResume();
 }).catch(e => {
   console.error(e);
   showError("Connexion à Firebase impossible : vérifie que l'authentification anonyme est activée.");

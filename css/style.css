@@ -35,3 +35,5 @@ fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 1.2rem}
 #players li,#started-players li{padding:.5rem .7rem;margin-bottom:.4rem;background:var(--bg);border:1px solid var(--line);border-radius:8px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 #error{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);background:var(--bad);color:#fff;padding:.7rem 1.2rem;border-radius:8px;max-width:90%}
+
+[hidden]{display:none !important}

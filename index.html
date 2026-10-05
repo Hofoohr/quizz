@@ -39,10 +39,28 @@
     <button id="leave" class="btn ghost">Quitter le salon</button>
   </section>
 
-  <section id="screen-started" class="screen">
-    <h1>La partie est lancée !</h1>
-    <p class="lead">Les questions arrivent dans la prochaine étape.</p>
-    <ul id="started-players"></ul>
+  <section id="screen-play" class="screen">
+    <div id="p-live" hidden>
+      <div class="top"><span id="p-progress"></span><span id="p-secs"></span></div>
+      <div class="timer"><i id="p-fill"></i></div>
+      <div class="meta"><span id="p-cat"></span><span id="p-pts"></span></div>
+      <h2 id="p-text"></h2>
+      <input id="p-answer" placeholder="Ta réponse…" autocomplete="off" maxlength="200">
+      <p class="hint">Ta réponse est enregistrée automatiquement : ce qui est écrit quand le temps arrive à 0 est retenu.</p>
+    </div>
+    <div id="p-wait" hidden>
+      <p id="p-wait-text" class="lead"></p>
+      <div id="p-count" class="code"></div>
+    </div>
+    <div id="p-end" hidden>
+      <h2>Questions terminées !</h2>
+      <p class="lead">En attente de la correction…</p>
+    </div>
+  </section>
+
+  <section id="screen-correction" class="screen">
+    <h1>Correction</h1>
+    <p class="lead">La correction arrive à la prochaine étape.</p>
   </section>
 
 </main>

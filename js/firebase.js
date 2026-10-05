@@ -1,7 +1,7 @@
-// Version du SDK Firebase utilisée (modifiable : remplace les trois numéros ci-dessous).
+// Version du SDK Firebase utilisée (modifiable : remplace les numéros ci-dessous).
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 export { ref, get, set, update, remove, onValue, onDisconnect, serverTimestamp }
@@ -17,3 +17,10 @@ export async function signIn() {
   if (!auth.currentUser) await signInAnonymously(auth);
   return auth.currentUser;
 }
+
+// Horloge du serveur : tous les joueurs se basent sur la même heure, quelle que soit leur horloge locale.
+let offset = 0;
+export const clockReady = new Promise(resolve => {
+  onValue(ref(db, '.info/serverTimeOffset'), s => { offset = s.val() || 0; resolve(); });
+});
+export const serverNow = () => Date.now() + offset;
