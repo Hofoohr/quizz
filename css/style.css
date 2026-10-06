@@ -52,3 +52,15 @@ fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 1.2rem}
 #r-rank li{display:flex;justify-content:space-between;padding:.7rem;margin-bottom:.4rem;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:1.1rem}
 .leave-game{display:block;margin-top:1.2rem}
 @media(max-width:480px){.row{grid-template-columns:1fr auto}.row .who{grid-column:1/-1}}
+
+/* --- Questions à plusieurs champs --- */
+#p-fields .field{flex-direction:column;align-items:stretch;gap:.3rem;margin:.6rem 0}
+#p-fields input{margin-bottom:0}
+.row.multi{display:block}
+.row.multi .who{display:flex;justify-content:space-between;margin-bottom:.5rem}
+.sub{display:grid;grid-template-columns:130px 1fr auto;gap:.6rem;align-items:center;padding:.4rem .5rem;margin-top:.3rem;border:1px solid var(--line);border-radius:6px}
+.sub.ok{border-color:var(--good)} .sub.ko{border-color:var(--bad)}
+.sub .lbl{color:var(--muted);font-size:.9rem}
+.expected .exp-line{display:block;margin-top:.3rem;font-size:1rem;font-weight:400;color:var(--text)}
+.expected .exp-line b{display:inline;margin:0;font-size:1rem}
+@media(max-width:480px){.sub{grid-template-columns:1fr auto}.sub .lbl{grid-column:1/-1}}

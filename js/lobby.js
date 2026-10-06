@@ -126,7 +126,10 @@ async function startGame() {
   const deck = shuffle(QUESTIONS.filter(q => chosen.includes(q.cat))).slice(0, +$('nb').value);
   // On publie les questions SANS la réponse attendue.
   const qs = {};
-  deck.forEach((q, i) => { qs[i] = { id: q.id, cat: q.cat, q: q.q, pts: q.pts, temps: q.temps }; });
+  deck.forEach((q, i) => {
+    qs[i] = { id: q.id, cat: q.cat, q: q.q, pts: q.pts, temps: q.temps };
+    if (q.champs) qs[i].champs = q.champs;   // intitulés des champs, sans les réponses
+  });
   try {
     await set(ref(db, `rooms/${code}/questions`), qs);
     await update(ref(db, `rooms/${code}/meta`), { phase: 'questions', startAt: serverTimestamp() });

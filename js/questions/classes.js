@@ -1,6 +1,8 @@
 export default {
   cat: "Classes",
   items: [
+    // Modèle de question à plusieurs champs (à remplir avec les vraies valeurs, puis à décommenter) :
+    // { q: "Sort : Flèche enflammée", champs: [["Portée maximale", "?"], ["Ligne de vue", "Oui / Non"], ["Coût en PA", "?"], ["Lancers par tour", "?"]], pts: 4, temps: 40 },
     ["Quelle classe est connue pour son invisibilité et ses dagues ?", "Le Sram", 1, 15],
     ["Quelle classe est spécialisée dans les soins ?", "L'Eniripsa", 1, 15],
     ["Quelle classe utilise des bombes ?", "Le Roublard", 1, 15],

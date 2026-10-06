@@ -37,7 +37,9 @@
             "cat": { ".validate": "newData.isString() && newData.val().length <= 100" },
             "q": { ".validate": "newData.isString() && newData.val().length <= 500" },
             "pts": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10" },
-            "temps": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 120" },
+            "temps": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300" },
+            // Questions à plusieurs champs : seuls les intitulés sont publiés, jamais les réponses.
+            "champs": { "$k": { ".validate": "newData.isString() && newData.val().length <= 100" } },
             // Pas de champ "a" : la réponse attendue n'est jamais publiée ici.
             "$other": { ".validate": false }
           }
@@ -50,7 +52,9 @@
             "$uid": {
               ".read": "auth != null && auth.uid === $uid",
               ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/meta/phase').val() === 'questions' && root.child('rooms/' + $code + '/players/' + auth.uid).exists()",
-              ".validate": "newData.isString() && newData.val().length <= 200"
+              // Réponse simple (texte) ou, pour une question à plusieurs champs, un texte par champ.
+              ".validate": "(newData.isString() && newData.val().length <= 200) || newData.hasChildren()",
+              "$f": { ".validate": "newData.isString() && newData.val().length <= 200" }
             }
           }
         },
@@ -59,7 +63,8 @@
           "$i": {
             ".read": "auth != null",
             ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
-            ".validate": "newData.isString() && newData.val().length <= 200"
+            ".validate": "(newData.isString() && newData.val().length <= 200) || newData.hasChildren()",
+            "$f": { ".validate": "newData.isString() && newData.val().length <= 200" }
           }
         },
 
@@ -73,7 +78,13 @@
         "verdicts": {
           ".read": "auth != null",
           ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
-          "$i": { "$uid": { ".validate": "newData.isBoolean()" } }
+          "$i": {
+            "$uid": {
+              // Un verdict global, ou un verdict par champ pour les questions à plusieurs champs.
+              ".validate": "newData.isBoolean() || newData.hasChildren()",
+              "$f": { ".validate": "newData.isBoolean()" }
+            }
+          }
         }
       }
     }

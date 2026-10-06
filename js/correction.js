@@ -8,12 +8,22 @@ let running = false, initing = false, ctx = null;
 let list = [], players = {}, index = null, answers = {}, expected = null, verdicts = {};
 let offs = [], offQ = [];
 
+// Intitulés des champs d'une question à plusieurs champs (null pour une question simple).
+const fieldsOf = q => (q && q.champs ? Object.values(q.champs) : null);
+// Verdict d'un joueur : vrai/faux, ou un verdict par champ. Retourne le nombre de champs justes, ou null s'il reste du travail.
+const result = (q, v) => {
+  const f = fieldsOf(q);
+  if (!f) return v === true ? 1 : v === false ? 0 : null;
+  const o = v && typeof v === 'object' ? v : {};
+  return f.every((_, k) => o[k] === true || o[k] === false) ? f.filter((_, k) => o[k] === true).length : null;
+};
+
 const path = p => ref(db, `rooms/${ctx.code}/${p}`);
 
 // Le chef publie la réponse attendue au moment où la correction atteint la question.
 async function publishExpected(i) {
   const q = QUESTIONS.find(x => x.id === list[i].id);
-  await set(path(`expected/${i}`), q ? q.a : '?');
+  await set(path(`expected/${i}`), q ? q.a : '?');   // texte, ou un tableau de textes pour plusieurs champs
 }
 
 async function initCorrection() {
@@ -44,14 +54,31 @@ function renderCorrection() {
   $('c-pts').textContent = q.pts + ' pt' + (q.pts > 1 ? 's' : '');
   $('c-cat').textContent = q.cat;
   $('c-text').textContent = q.q;
-  $('c-expected').textContent = expected ?? '…';
+  const fields = fieldsOf(q);
+  if (fields) {
+    $('c-expected').innerHTML = fields.map((l, k) =>
+      `<span class="exp-line">${esc(l)} : <b>${esc(expected && expected[k] != null ? expected[k] : '…')}</b></span>`).join('');
+  } else $('c-expected').textContent = expected ?? '…';
   const v = verdicts[index] || {};
   $('c-list').innerHTML = order().map(id => {
+    const a = answers[id];
+    if (fields) {
+      const mine = v[id] && typeof v[id] === 'object' ? v[id] : {};
+      const got = result(q, v[id]);
+      const subs = fields.map((label, k) => {
+        const val = mine[k];
+        const verdict = ctx.isHost
+          ? `<button class="v${val === true ? ' on' : ''}" data-id="${id}" data-k="${k}" data-val="1">✅</button><button class="v${val === false ? ' on' : ''}" data-id="${id}" data-k="${k}" data-val="0">❌</button>`
+          : `<span class="badge">${val === true ? '✅' : val === false ? '❌' : '…'}</span>`;
+        const t = a && typeof a === 'object' && a[k] != null ? esc(a[k]) : '<i>(pas de réponse)</i>';
+        return `<div class="sub ${val === true ? 'ok' : val === false ? 'ko' : ''}"><span class="lbl">${esc(label)}</span><span class="ans">${t}</span><span class="verdict">${verdict}</span></div>`;
+      }).join('');
+      return `<li class="row multi"><div class="who"><b>${esc(players[id].name)}</b>${id === ctx.uid ? ' <small>(toi)</small>' : ''}${got === null ? '' : `<span>${got} / ${fields.length}</span>`}</div>${subs}</li>`;
+    }
     const val = v[id];
     const verdict = ctx.isHost
       ? `<button class="v${val === true ? ' on' : ''}" data-id="${id}" data-val="1">✅</button><button class="v${val === false ? ' on' : ''}" data-id="${id}" data-val="0">❌</button>`
       : `<span class="badge">${val === true ? '✅' : val === false ? '❌' : '…'}</span>`;
-    const a = answers[id];
     return `<li class="row ${val === true ? 'ok' : val === false ? 'ko' : ''}">
       <div class="who"><b>${esc(players[id].name)}</b>${id === ctx.uid ? ' <small>(toi)</small>' : ''}</div>
       <div class="ans">${a ? esc(a) : '<i>(pas de réponse)</i>'}</div>
@@ -67,8 +94,11 @@ function renderResults() {
   const max = list.reduce((s, q) => s + q.pts, 0);
   const rows = Object.keys(players).map(id => {
     let score = 0;
-    list.forEach((q, j) => { if ((verdicts[j] || {})[id] === true) score += q.pts; });
-    return { id, name: players[id].name, score };
+    list.forEach((q, j) => {
+      const n = fieldsOf(q) ? fieldsOf(q).length : 1;
+      score += q.pts * (result(q, (verdicts[j] || {})[id]) || 0) / n;   // plusieurs champs : points au prorata des champs justes
+    });
+    return { id, name: players[id].name, score: Math.round(score * 10) / 10 };
   }).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
   $('r-rank').innerHTML = rows.map(r => {
     const rank = 1 + rows.filter(x => x.score > r.score).length;
@@ -86,9 +116,11 @@ function render() {
 $('c-list').addEventListener('click', e => {
   const b = e.target.closest('.v');
   if (!b || !ctx || !ctx.isHost) return;
-  const id = b.dataset.id, val = b.dataset.val === '1';
-  const cur = (verdicts[index] || {})[id];
-  set(path(`verdicts/${index}/${id}`), cur === val ? null : val).catch(console.error);
+  const id = b.dataset.id, val = b.dataset.val === '1', k = b.dataset.k;
+  const mine = (verdicts[index] || {})[id];
+  const cur = k === undefined ? mine : (mine && typeof mine === 'object' ? mine[k] : undefined);
+  const where = k === undefined ? `verdicts/${index}/${id}` : `verdicts/${index}/${id}/${k}`;
+  set(path(where), cur === val ? null : val).catch(console.error);
 });
 
 $('c-prev').onclick = () => {
@@ -97,7 +129,7 @@ $('c-prev').onclick = () => {
 
 $('c-next').onclick = async () => {
   const j = verdicts[index] || {};
-  const pending = Object.keys(players).filter(id => j[id] === undefined || j[id] === null).length;
+  const pending = Object.keys(players).filter(id => result(list[index], j[id]) === null).length;
   if (pending && !confirm(`${pending} réponse(s) pas encore corrigée(s) : elles compteront comme fausses. Continuer ?`)) return;
   try {
     if (index === list.length - 1) await update(path('meta'), { phase: 'results' });
