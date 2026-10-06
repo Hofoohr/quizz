@@ -1,7 +1,6 @@
 export default {
   cat: "Classes",
   items: [
-     { q: "Sort : Flèche enflammée", champs: [["Portée maximale", "5"], ["Ligne de vue", "Oui"], ["Coût en PA", "4"], ["Lancers par tour", "2"]], pts: 4, temps: 40 },
     ["Quelle classe est connue pour son invisibilité et ses dagues ?", "Le Sram", 1, 15],
     ["Quelle classe est spécialisée dans les soins ?", "L'Eniripsa", 1, 15],
     ["Quelle classe utilise des bombes ?", "Le Roublard", 1, 15],
