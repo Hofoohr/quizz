@@ -7,19 +7,12 @@
 //   { q: "Question ?", champs: [["Intitulé du champ 1", "Réponse 1"], ["Intitulé du champ 2", "Réponse 2"]], pts: 3, temps: 40 }
 // Ne change pas l'ordre des lignes existantes : l'identifiant d'une question en dépend.
 // Banque publique : les réponses sont visibles par tous les visiteurs du site.
-import items from "./questions/items.js";
-import forgemagie from "./questions/forgemagie.js";
-import monstres from "./questions/monstres.js";
-import classes from "./questions/classes.js";
-import lore from "./questions/lore.js";
 import quetes from "./questions/quetes.js";
-import carte from "./questions/carte.js";
-import histoireDuJeu from "./questions/histoire-du-jeu.js";
+import quetesDofus from "./questions/quetes-dofus.js";
 import sorts from "./questions/sorts.js";
 import panoplies from "./questions/panoplies.js";
-import quetesDofus from "./questions/quetes-dofus.js";
 
-const CATEGORIES = [items, forgemagie, monstres, classes, lore, quetes, carte, histoireDuJeu, sorts, panoplies, quetesDofus];
+const CATEGORIES = [quetes, quetesDofus, sorts, panoplies];
 
 export const QUESTIONS = CATEGORIES.flatMap((c, ci) =>
   c.items.map((it, i) => {
