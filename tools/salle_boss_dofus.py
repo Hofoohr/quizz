@@ -10,6 +10,7 @@ Cette information est dans les articles de dofus.jeuxonline.info, qui contiennen
   - jeuxonline : l'index des donjons (nom, identifiant du boss, lien de l'article) puis le tableau de chaque article,
     c'est du vrai scraping HTML, avec des expressions régulières ;
   - DofusDB : le nom officiel du donjon et du boss, à partir de l'identifiant du boss (la « clé » commune aux deux sites).
+    Quand plusieurs boss partagent un même donjon dans DofusDB, on utilise à la place le nom du donjon de jeuxonline.
 
 Les étapes : 1. récupérer  2. extraire  3. contrôler  4. écrire.
 Le tableau d'un article contient jusqu'à 8 entrées par salle (le groupe complet) : on garde les monstres DISTINCTS,
@@ -24,6 +25,7 @@ import time
 import unicodedata
 import urllib.parse
 import urllib.request
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -124,10 +126,18 @@ def distincts(noms):
 def main():
     fiches = fiches_index()
     par_boss, monstres = noms_dofusdb(fiches)
+    # DofusDB range parfois plusieurs boss sous un même donjon (ex. les Cavaliers de l'Eliocalypse, tous dans
+    # « Tempête de l'Eliocalypse »). Dans ce cas son nom n'identifie plus le donjon : on prend celui de jeuxonline
+    # (« Trône de sang », « Sentence de la balance »…), propre à chaque boss. Sinon on garde le nom officiel de DofusDB.
+    partages = Counter(par_boss.get(f["boss_id"]) for f in fiches)
     items, ignores, deja = [], [], set()
     for f in fiches:
-        nom = par_boss.get(f["boss_id"], f["donjon"])
-        if "[RIP]" in nom or nom in deja:
+        officiel = par_boss.get(f["boss_id"])
+        nom = officiel if officiel and partages[officiel] == 1 else f["donjon"]
+        if "[RIP]" in nom:
+            continue
+        if nom in deja:  # deux fiches pour un même nom : on le dit au lieu d'écarter en silence
+            ignores.append((nom, "nom de donjon en double"))
             continue
         try:
             salle = derniere_salle(telecharger(f["url"]))
