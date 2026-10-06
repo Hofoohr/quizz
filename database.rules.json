@@ -72,8 +72,9 @@
           "$i": {
             ".read": "auth != null",
             ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
-            ".validate": "(newData.isString() && newData.val().length <= 200) || newData.hasChildren()",
-            "$f": { ".validate": "newData.isString() && newData.val().length <= 200" }
+            // La réponse attendue peut être longue (ex. : texte d'un passif de Dofus) ; seul le chef l'écrit.
+            ".validate": "(newData.isString() && newData.val().length <= 1000) || newData.hasChildren()",
+            "$f": { ".validate": "newData.isString() && newData.val().length <= 1000" }
           }
         },
 
