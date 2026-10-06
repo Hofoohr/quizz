@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PTS, TEMPS = 3, 45
+PTS, TEMPS = 4, 50
 INCLURE_COSMETIQUES = False
 # Ordre d'affichage des emplacements ; les armes sont regroupées sous « Arme ».
 ORDRE = ['Chapeau', 'Cape', 'Amulette', 'Anneau', 'Ceinture', 'Bottes', 'Arme', 'Bouclier', 'Familier']
@@ -29,7 +29,7 @@ def get_all(path, params, page=100):
 
 def main():
     sets = get_all('item-sets', {'$select[]': ['id', 'name', 'isCosmetic', 'level']})
-    items = get_all('items', {'itemSetId[$gt]': 0, '$select[]': ['id', 'name', 'typeId', 'itemSetId']})
+    items = get_all('items', {'itemSetId[$gt]': 0, '$select[]': ['id', 'name', 'typeId', 'itemSetId', 'level']})
     types = {t['id']: t for t in get_all('item-types', {'$select[]': ['id', 'name', 'superTypeId']})}
     supers = {s['id']: s['name']['fr'] for s in get_all('item-super-types', {'$select[]': ['id', 'name']})}
     by_set = defaultdict(list)
@@ -54,11 +54,14 @@ def main():
             parts.append(label + (f" ×{cnt[k]}" if cnt[k] > 1 and k != 'Arme' else ''))
         nom = s['name']['fr']
         q = f"Quels items composent la « {nom} » ?" + (f" (niveau {s['level']})" if names[nom] > 1 else '')
-        champs = [["Nombre d'items", str(len(slots))], ["Types d'items (Chapeau, Cape, Anneau…)", ", ".join(parts)]]
+        # Niveau pour équiper la panoplie complète = niveau de son item le plus élevé (vérifié : égal au champ « level » du set).
+        niveau = max(i['level'] for i in by_set[s['id']])
+        champs = [["Nombre d'items", str(len(slots))], ["Types d'items (Chapeau, Cape, Anneau…)", ", ".join(parts)],
+                  ["Niveau requis pour équiper toute la panoplie", str(niveau)]]
         lines.append("    " + json.dumps({'q': q, 'champs': champs, 'pts': PTS, 'temps': TEMPS}, ensure_ascii=False) + ",")
     (ROOT / 'js/questions/panoplies.js').write_text(
         "// Fichier généré par tools/panoplies_dofus.py : ne pas modifier à la main (relancer le script).\n"
-        "// Une question par panoplie (hors cosmétiques) : nombre d'items et types d'items. Données : DofusDB.\n"
+        "// Une question par panoplie (hors cosmétiques) : nombre d'items, types d'items et niveau requis. Données : DofusDB.\n"
         'export default {\n  cat: "Items",\n  items: [\n' + "\n".join(lines) + "\n  ],\n};\n", encoding='utf-8')
     print(len(lines), 'questions écrites', file=sys.stderr)
 
