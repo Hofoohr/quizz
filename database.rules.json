@@ -59,6 +59,15 @@
           }
         },
 
+        "skips": {
+          // Le chef peut terminer la question en cours : on enregistre l'heure à laquelle il l'a passée.
+          ".read": "auth != null",
+          "$i": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+            ".validate": "newData.isNumber()"
+          }
+        },
+
         "expected": {
           "$i": {
             ".read": "auth != null",

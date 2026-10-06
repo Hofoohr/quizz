@@ -1,4 +1,4 @@
-import { db, ref, get, set, update, serverNow, clockReady } from "./firebase.js";
+import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockReady } from "./firebase.js";
 
 const COUNTDOWN_MS = 5000;   // compte à rebours avant la première question
 const PAUSE_MS = 3000;       // pause entre deux questions
@@ -11,6 +11,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 const fieldsOf = q => (q && q.champs ? Object.values(q.champs) : null);
 const inputs = () => [...document.querySelectorAll('#p-fields input')];
 let running = false, ctx = null, list = [], sched = [];
+let skips = {}, offSkips = null;
 let timer = null, saveTimer = null, cur = null, lockedFor = null, lastSaved = {}, finishing = false;
 
 function view(name) {
@@ -82,8 +83,28 @@ function finish(now) {
   }
 }
 
+// Calendrier des questions. Quand le chef passe une question, elle se termine à l'heure enregistrée dans « skips ».
+function buildSched() {
+  let t = ctx.startAt + COUNTDOWN_MS;
+  sched = list.map((q, i) => {
+    const start = t;
+    let end = start + q.temps * 1000;
+    if (skips[i] != null) end = Math.max(start, Math.min(end, skips[i]));
+    t = end + PAUSE_MS;
+    return { start, end };
+  });
+}
+
+// Le chef passe la question en cours : elle se termine maintenant pour tout le monde.
+function skipQuestion() {
+  if (!ctx || !ctx.isHost || cur === null || skips[cur] != null) return;
+  $('p-skip').disabled = true;
+  set(ref(db, `rooms/${ctx.code}/skips/${cur}`), serverTimestamp()).catch(e => { console.error(e); $('p-skip').disabled = false; });
+}
+
 // Tous les navigateurs déduisent la question en cours de l'heure du serveur.
 function tick() {
+  buildSched();
   const now = serverNow();
   const i = sched.findIndex(s => now < s.end);
   if (i === -1) return finish(now);
@@ -96,6 +117,8 @@ function tick() {
   }
   view('live');
   if (cur !== i) openQuestion(i);
+  $('p-skip').hidden = !ctx.isHost;
+  $('p-skip').disabled = skips[i] != null;
   const left = (s.end - now) / 1000;
   $('p-secs').textContent = Math.ceil(left) + ' s';
   $('p-fill').style.width = (left / ((s.end - s.start) / 1000) * 100) + '%';
@@ -107,20 +130,21 @@ function onType() {
   const i = cur;
   saveTimer = setTimeout(() => saveNow(i), SAVE_DELAY_MS);
 }
+$('p-skip').onclick = skipQuestion;
 $('p-answer').addEventListener('input', onType);
 $('p-fields').addEventListener('input', onType);
 
 export async function enter(c) {
   if (running) return;
-  running = true; ctx = c; cur = null; lockedFor = null; lastSaved = {}; finishing = false;
+  running = true; ctx = c; cur = null; lockedFor = null; lastSaved = {}; finishing = false; skips = {};
   try {
     await clockReady;
     const snap = await get(ref(db, `rooms/${ctx.code}/questions`));
     const v = snap.val() || [];
     list = Array.isArray(v) ? v : Object.values(v);
     if (!list.length) { running = false; return; }
-    let t = ctx.startAt + COUNTDOWN_MS;
-    sched = list.map(q => { const s = { start: t, end: t + q.temps * 1000 }; t = s.end + PAUSE_MS; return s; });
+    offSkips = onValue(ref(db, `rooms/${ctx.code}/skips`), s => { skips = s.val() || {}; });
+    buildSched();
     timer = setInterval(tick, 200);
     tick();
   } catch (e) { console.error(e); running = false; }
@@ -128,6 +152,7 @@ export async function enter(c) {
 
 export function stop() {
   running = false;
+  if (offSkips) { offSkips(); offSkips = null; }
   clearInterval(timer);
   clearTimeout(saveTimer);
 }
