@@ -14,8 +14,9 @@ import panoplies from "./questions/panoplies.js";
 import dofus from "./questions/dofus.js";
 import legendaires from "./questions/legendaires.js";
 import succesDonjons from "./questions/succes-donjons.js";
+import donjons from "./questions/donjons.js";
 
-const CATEGORIES = [quetes, quetesDofus, sorts, panoplies, dofus, legendaires, succesDonjons];
+const CATEGORIES = [quetes, quetesDofus, sorts, panoplies, dofus, legendaires, succesDonjons, donjons];
 
 export const QUESTIONS = CATEGORIES.flatMap((c, ci) =>
   c.items.map((it, i) => {

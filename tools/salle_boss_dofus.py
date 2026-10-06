@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère la catégorie « Donjons » : la composition de la salle du boss de chaque donjon.
+"""Génère la catégorie « Donjons » : les 4 monstres de la dernière salle (celle du boss) de chaque donjon.
 
 Usage : python3 tools/salle_boss_dofus.py
 Écrit : js/questions/donjons.js
@@ -13,9 +13,12 @@ Cette information est dans les articles de dofus.jeuxonline.info, qui contiennen
     Quand plusieurs boss partagent un même donjon dans DofusDB, on utilise à la place le nom du donjon de jeuxonline.
 
 Les étapes : 1. récupérer  2. extraire  3. contrôler  4. écrire.
-Le tableau d'un article contient jusqu'à 8 entrées par salle (le groupe complet) : on garde les monstres DISTINCTS,
-sans doublon ni niveau. Un article sans tableau exploitable, ou dont la dernière salle ne contient pas le boss,
-est ignoré et signalé : mieux vaut une question en moins qu'une réponse fausse.
+Le tableau d'un article liste 8 entrées par salle : le groupe de 4 monstres rencontré en combat, puis une
+seconde série. Les 4 PREMIÈRES entrées correspondent aux captures de combat (vérifié à l'œil sur le Bouftou Royal,
+le Korriandre et Guerre). Un monstre présent deux fois parmi les 4 s'écrit « Nom ×2 ».
+Est ignoré et signalé (mieux vaut une question en moins qu'une réponse fausse) tout donjon dont l'article n'a pas de
+tableau, dont la dernière salle n'a pas exactement 8 entrées, dont les 4 premières ne contiennent pas le boss,
+ou dont un nom de monstre est manifestement du texte parasite.
 """
 import html
 import json
@@ -32,6 +35,9 @@ ROOT = Path(__file__).resolve().parent.parent
 JOL = "https://dofus.jeuxonline.info"
 DOFUSDB = "https://api.dofusdb.fr"
 PTS, TEMPS = 3, 60
+NB_MONSTRES = 4      # taille du groupe rencontré en combat
+TAILLE_TABLEAU = 8   # entrées par salle dans les articles jeuxonline : 2 groupes de 4
+NOM_MAX = 40         # au-delà, ce n'est pas un nom de monstre (texte parasite de la page)
 PAUSE = 0.3  # politesse envers le serveur
 
 
@@ -108,18 +114,23 @@ def derniere_salle(page):
     # on retire donc les balises en respectant les guillemets, et pas avec un simple <[^>]+>.
     balise = r"<(?:[^>\"']|\"[^\"]*\"|'[^']*')*>"
     lignes = [html.unescape(re.sub(balise, "", x)).strip() for x in re.split(r"<br\s*/?>", cellule) if x.strip()]
-    # « Bouftou Royal (30) » ou « (209) Nocturlabe » -> le nom seul
-    noms = [re.sub(r"\s*\(\d+\)\s*", " ", l).strip() for l in lignes]
+    # « Bouftou Royal (30) », « (209) Nocturlabe » ou « Dodox 212) » (parenthèse oubliée dans la source) -> le nom seul,
+    # avec une majuscule initiale (« kardorim » est écrit en minuscules sur la page).
+    noms = [re.sub(r"\s+", " ", re.sub(r"[()]|\b\d+\b", " ", l)).strip() for l in lignes]
+    noms = [n[:1].upper() + n[1:] for n in noms]
     return titre.strip(), noms
 
 
-def distincts(noms):
+def formater(noms):
+    """['Abrazif', 'Abrazif', 'Mérulette'] -> « Abrazif ×2, Mérulette » (ordre d'apparition conservé)."""
+    effectifs = Counter(sans_accent(n) for n in noms)
     vus, out = set(), []
     for n in noms:
-        if n and sans_accent(n) not in vus:
-            vus.add(sans_accent(n))
-            out.append(n)
-    return out
+        cle = sans_accent(n)
+        if cle not in vus:
+            vus.add(cle)
+            out.append(f"{n} ×{effectifs[cle]}" if effectifs[cle] > 1 else n)
+    return ", ".join(out)
 
 
 # --------------------------------------------------------------------------- 3. contrôler + 4. écrire
@@ -130,6 +141,9 @@ def main():
     # « Tempête de l'Eliocalypse »). Dans ce cas son nom n'identifie plus le donjon : on prend celui de jeuxonline
     # (« Trône de sang », « Sentence de la balance »…), propre à chaque boss. Sinon on garde le nom officiel de DofusDB.
     partages = Counter(par_boss.get(f["boss_id"]) for f in fiches)
+    # Un même article peut décrire deux donjons (Minotot / Minotoror) : sa « dernière salle » ne dit alors pas
+    # laquelle est celle de CE boss, donc on n'écrit aucune des deux questions.
+    articles = Counter(f["url"] for f in fiches)
     items, ignores, deja = [], [], set()
     for f in fiches:
         officiel = par_boss.get(f["boss_id"])
@@ -139,6 +153,9 @@ def main():
         if nom in deja:  # deux fiches pour un même nom : on le dit au lieu d'écarter en silence
             ignores.append((nom, "nom de donjon en double"))
             continue
+        if articles[f["url"]] > 1:
+            ignores.append((nom, "article partagé avec un autre donjon : salle du boss ambiguë"))
+            continue
         try:
             salle = derniere_salle(telecharger(f["url"]))
         except OSError as e:  # une page en erreur ne doit pas arrêter tout le script
@@ -147,19 +164,26 @@ def main():
         if not salle:
             ignores.append((nom, "pas de tableau des salles"))
             continue
-        noms = distincts(salle[1])
-        # Contrôle : la dernière salle doit contenir le boss (nom DofusDB ou nom jeuxonline).
+        tous = salle[1]
+        if len(tous) != TAILLE_TABLEAU:
+            ignores.append((nom, f"dernière salle de {len(tous)} entrées au lieu de {TAILLE_TABLEAU}"))
+            continue
+        noms = tous[:NB_MONSTRES]
+        if any(len(n) > NOM_MAX or not n for n in noms):
+            ignores.append((nom, f"texte parasite à la place d'un nom de monstre ({noms})"))
+            continue
+        # Contrôle : le boss doit figurer parmi les 4 monstres (nom DofusDB ou nom jeuxonline).
         boss = {sans_accent(f["boss"]), sans_accent(monstres.get(f["boss_id"], ""))}
         if not any(sans_accent(n) in boss for n in noms):
-            ignores.append((nom, f"boss absent de la dernière salle ({', '.join(noms[:4])}…)"))
+            ignores.append((nom, f"boss absent des 4 premiers monstres ({', '.join(noms)})"))
             continue
         deja.add(nom)
-        items.append([f"Quelle est la composition de la salle du boss du donjon « {nom} » ?", ", ".join(noms), PTS, TEMPS])
+        items.append([f"Quels sont les {NB_MONSTRES} monstres de la dernière salle du donjon « {nom} » ?", formater(noms), PTS, TEMPS])
 
     lignes = ["    " + json.dumps(i, ensure_ascii=False) + "," for i in items]
     (ROOT / "js/questions/donjons.js").write_text(
         "// Fichier généré par tools/salle_boss_dofus.py : ne pas modifier à la main (relancer le script).\n"
-        "// Composition (monstres distincts) de la salle du boss de chaque donjon.\n"
+        "// Les 4 monstres de la dernière salle (celle du boss) de chaque donjon.\n"
         'export default {\n  cat: "Donjons",\n  items: [\n' + "\n".join(lignes) + "\n  ],\n};\n", encoding="utf-8")
     print(f"{len(items)} questions écrites ; {len(ignores)} donjons ignorés :", file=sys.stderr)
     for nom, raison in ignores:
