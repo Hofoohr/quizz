@@ -13,10 +13,8 @@ import sorts from "./questions/sorts.js";
 import panoplies from "./questions/panoplies.js";
 import dofus from "./questions/dofus.js";
 import legendaires from "./questions/legendaires.js";
-import monstres from "./questions/monstres.js";
 
-// Toujours ajouter à la fin : l'identifiant d'une question dépend de la position de sa catégorie.
-const CATEGORIES = [quetes, quetesDofus, sorts, panoplies, dofus, legendaires, monstres];
+const CATEGORIES = [quetes, quetesDofus, sorts, panoplies, dofus, legendaires];
 
 export const QUESTIONS = CATEGORIES.flatMap((c, ci) =>
   c.items.map((it, i) => {
