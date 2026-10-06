@@ -1,4 +1,4 @@
-// Items légendaires : le passif de chaque item, puis l'item correspondant à chaque passif. Données : DofusDB.
+// Items légendaires : le passif de chaque item, puis l'item correspondant à chaque passif.
 export default {
   cat: "Légendaire",
   items: [

@@ -1,4 +1,4 @@
-// Une question par Dofus : bonus fixes et passif. Données : DofusDB.
+// Une question par Dofus : bonus fixes et passif.
 export default {
   cat: "Items",
   items: [

@@ -1,4 +1,4 @@
-// Une question à 10 champs par sort de classe, au rang maximal. Données : DofusDB.
+// Une question à 10 champs par sort de classe, au rang maximal.
 export default {
   cat: "Sort de classe",
   items: [

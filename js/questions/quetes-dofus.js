@@ -1,4 +1,4 @@
-// Une question par quête de chaque Dofus. Données : DofusDB.
+// Une question par quête de chaque Dofus.
 export default {
   cat: "Quêtes",
   items: [

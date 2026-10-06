@@ -1,4 +1,4 @@
-// Une question par panoplie (hors cosmétiques) : nombre d'items, types d'items et niveau requis. Données : DofusDB.
+// Une question par panoplie (hors cosmétiques) : nombre d'items, types d'items et niveau requis.
 export default {
   cat: "Panoplie",
   items: [
