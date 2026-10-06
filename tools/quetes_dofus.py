@@ -8,6 +8,7 @@ Principe : chaque Dofus est la récompense d'un succès « de tête ». On desce
 (« Obtenir les succès suivants ») et on récolte les quêtes listées dans need.quests. Un sous-succès qui est
 lui-même le succès de tête d'un autre Dofus est ignoré (ex. : le Nébuleux demande le succès des Veilleurs).
 Une quête présente chez deux Dofus, ou deux quêtes de même nom chez deux Dofus, est écartée (réponse ambiguë).
+Chaque question porte son Dofus comme « groupe » : le tirage donne autant de chances à chaque Dofus (js/tirage.js).
 Relancer le script après une mise à jour du jeu. Les nouveaux Dofus se placent à la fin : l'ordre existant ne change pas.
 """
 import json, subprocess, sys, urllib.parse
@@ -79,7 +80,7 @@ def main():
             if (names[q], dofus) not in pairs: pairs.append((names[q], dofus))
     ambigus = {n for n, d in by_name.items() if len(d) > 1}
     pairs = [(n, d) for n, d in pairs if n not in ambigus]
-    out = ["    " + json.dumps([f"À quel Dofus est reliée la quête « {n} » ?", d, PTS, TEMPS], ensure_ascii=False) + "," for n, d in pairs]
+    out = ["    " + json.dumps([f"À quel Dofus est reliée la quête « {n} » ?", d, PTS, TEMPS, d], ensure_ascii=False) + "," for n, d in pairs]
     (ROOT / 'js/questions/quetes-dofus.js').write_text(
         "// Fichier généré par tools/quetes_dofus.py : ne pas modifier à la main (relancer le script).\n"
         "// Une question par quête de chaque Dofus. Données : DofusDB.\n"

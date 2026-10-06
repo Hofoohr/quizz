@@ -2,6 +2,7 @@ import { db, signIn, ref, get, set, update, remove, onValue, onDisconnect, serve
 import { QUESTIONS } from "./questions.js";
 import * as Play from "./play.js";
 import * as Corr from "./correction.js";
+import { melange } from "./tirage.js";
 
 const MIN_PLAYERS = 1;   // mets 3 quand tu auras fini de tester seul
 const MAX_PLAYERS = 10;  // limite vérifiée par l'application (les règles de la base ne peuvent pas compter les joueurs)
@@ -9,7 +10,6 @@ const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 let uid = null, code = null, meta = null, players = {};
 let playerRef = null, unsubs = [], started = false;
@@ -123,7 +123,7 @@ function render() {
 async function startGame() {
   const chosen = [...document.querySelectorAll('#cats input:checked')].map(i => i.value);
   if (!chosen.length) { showError('Choisis au moins une catégorie.'); return; }
-  const pool = shuffle(QUESTIONS.filter(q => chosen.includes(q.cat)));
+  const pool = melange(QUESTIONS.filter(q => chosen.includes(q.cat)));   // tirage équilibré entre les groupes (ex. : les Dofus)
   const n = +$('nb').value;
   const deck = pool.slice(0, n);
   // La première question est toujours une question à plusieurs champs, s'il y en a dans les catégories choisies.
