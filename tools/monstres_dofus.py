@@ -144,7 +144,7 @@ def ecrire(questions):
     lignes = ["    " + json.dumps(q, ensure_ascii=False) + "," for q in questions]
     contenu = (
         "// Fichier généré par tools/monstres_dofus.py : ne pas modifier à la main (relancer le script).\n"
-        "// Boss et mini-boss : sous-zone, famille et caractéristiques. Données : DofusDB.\n"
+        "// Boss et mini-boss : sous-zone, famille et caractéristiques.\n"
         'export default {\n  cat: "Monstres",\n  items: [\n' + "\n".join(lignes) + "\n  ],\n};\n"
     )
     (ROOT / "js/questions/monstres.js").write_text(contenu, encoding="utf-8")

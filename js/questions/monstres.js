@@ -1,5 +1,5 @@
 // Fichier généré par tools/monstres_dofus.py : ne pas modifier à la main (relancer le script).
-// Boss et mini-boss : sous-zone, famille et caractéristiques. Données : DofusDB.
+// Boss et mini-boss : sous-zone, famille et caractéristiques.
 export default {
   cat: "Monstres",
   items: [
