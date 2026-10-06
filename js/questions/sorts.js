@@ -1,4 +1,3 @@
-// Fichier généré par tools/sorts_dofus.py : ne pas modifier à la main (relancer le script).
 // Une question à 10 champs par sort de classe, au rang maximal. Données : DofusDB.
 export default {
   cat: "Sort de classe",

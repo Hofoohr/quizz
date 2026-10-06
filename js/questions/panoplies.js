@@ -1,4 +1,3 @@
-// Fichier généré par tools/panoplies_dofus.py : ne pas modifier à la main (relancer le script).
 // Une question par panoplie (hors cosmétiques) : nombre d'items, types d'items et niveau requis. Données : DofusDB.
 export default {
   cat: "Panoplie",

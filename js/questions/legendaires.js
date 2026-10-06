@@ -1,4 +1,3 @@
-// Fichier généré par tools/legendaires_dofus.py : ne pas modifier à la main (relancer le script).
 // Items légendaires : le passif de chaque item, puis l'item correspondant à chaque passif. Données : DofusDB.
 export default {
   cat: "Légendaire",

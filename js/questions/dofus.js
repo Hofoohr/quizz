@@ -1,4 +1,3 @@
-// Fichier généré par tools/dofus_bonus.py : ne pas modifier à la main (relancer le script).
 // Une question par Dofus : bonus fixes et passif. Données : DofusDB.
 export default {
   cat: "Items",

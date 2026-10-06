@@ -1,4 +1,3 @@
-// Fichier généré par tools/quetes_dofus.py : ne pas modifier à la main (relancer le script).
 // Une question par quête de chaque Dofus. Données : DofusDB.
 export default {
   cat: "Quêtes",
