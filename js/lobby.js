@@ -123,7 +123,13 @@ function render() {
 async function startGame() {
   const chosen = [...document.querySelectorAll('#cats input:checked')].map(i => i.value);
   if (!chosen.length) { showError('Choisis au moins une catégorie.'); return; }
-  const deck = shuffle(QUESTIONS.filter(q => chosen.includes(q.cat))).slice(0, +$('nb').value);
+  const pool = shuffle(QUESTIONS.filter(q => chosen.includes(q.cat)));
+  const n = +$('nb').value;
+  const deck = pool.slice(0, n);
+  // La première question est toujours une question à plusieurs champs, s'il y en a dans les catégories choisies.
+  const m = deck.findIndex(q => q.champs);
+  if (m > 0) deck.unshift(...deck.splice(m, 1));
+  else if (m === -1) { const extra = pool.slice(n).find(q => q.champs); if (extra) { deck.unshift(extra); deck.splice(n); } }
   // On publie les questions SANS la réponse attendue.
   const qs = {};
   deck.forEach((q, i) => {
