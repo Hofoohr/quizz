@@ -3,7 +3,7 @@
 
 Usage : python3 tools/quetes_dofus.py
 Écrit : js/questions/quetes-dofus.js  (catégorie « Quêtes », une question par quête de chaque série de Dofus)
-Source : les succès « Terminer la série des quêtes du Dofus … » (liste des quêtes dans need.quests).
+Source : les succès de série de quêtes de chaque Dofus (liste des quêtes dans need.quests).
 Relancer le script après une mise à jour du jeu.
 """
 import json, subprocess, sys, urllib.parse
@@ -12,9 +12,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PTS, TEMPS = 2, 20
-# Succès de série de quêtes -> Dofus. (Les séries « Introduction des Dofus » et « Dofus Élémentaires » ne désignent pas un seul Dofus.)
+# Succès listant les quêtes d'un Dofus -> Dofus. Les nouvelles séries se placent à la fin : l'identifiant des questions existantes ne change pas.
+# (« Introduction des Dofus » et « Dofus Élémentaires » ne désignent pas un seul Dofus : ignorées.)
 SERIES = {1048: 'Dofus Émeraude', 1101: 'Dofus Pourpre', 1385: 'Dofus Turquoise',
-          5220: 'Dofus Ocre', 1622: 'Dofus Ivoire', 1704: 'Dofus Ébène'}
+          5220: 'Dofus Ocre', 1622: 'Dofus Ivoire', 1704: 'Dofus Ébène',
+          2198: 'Dofus Vulbis',            # succès « Rêves de dragons » (récompense : Dofus Vulbis)
+          5162: 'Dofus du Cauchemar',      # succès « Eliocalypse : Réminiscence » (récompense : Dofus du Cauchemar)
+          # Dofus des Veilleurs : récompense du succès « Odyssée en trois dimensions », qui regroupe ces 4 succès de quêtes.
+          1072: 'Dofus des Veilleurs', 1102: 'Dofus des Veilleurs', 1142: 'Dofus des Veilleurs', 1186: 'Dofus des Veilleurs'}
 
 def get(path, params):
     q = urllib.parse.urlencode(params, doseq=True, safe='[]$')
