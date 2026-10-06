@@ -1,7 +1,7 @@
 import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockReady } from "./firebase.js";
 
-const COUNTDOWN_MS = 5000;   // compte à rebours avant la première question
-const PAUSE_MS = 3000;       // pause entre deux questions
+const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
+const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
 const GRACE_MS = 2000;       // délai avant la correction (laisse arriver les dernières réponses)
 const SAVE_DELAY_MS = 300;   // délai d'enregistrement pendant la frappe
 
