@@ -15,8 +15,9 @@ import quetes from "./questions/quetes.js";
 import carte from "./questions/carte.js";
 import histoireDuJeu from "./questions/histoire-du-jeu.js";
 import sorts from "./questions/sorts.js";
+import panoplies from "./questions/panoplies.js";
 
-const CATEGORIES = [items, forgemagie, monstres, classes, lore, quetes, carte, histoireDuJeu, sorts];
+const CATEGORIES = [items, forgemagie, monstres, classes, lore, quetes, carte, histoireDuJeu, sorts, panoplies];
 
 export const QUESTIONS = CATEGORIES.flatMap((c, ci) =>
   c.items.map((it, i) => {
