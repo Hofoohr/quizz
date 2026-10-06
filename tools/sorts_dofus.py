@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère la catégorie « Sorts » à partir de DofusDB (api.dofusdb.fr).
+"""Génère la catégorie « Sort de classe » à partir de DofusDB (api.dofusdb.fr).
 
 Usage : python3 tools/sorts_dofus.py
 Écrit : js/questions/sorts.js  (une question à 10 champs par sort de classe, au rang maximal)
@@ -88,7 +88,7 @@ def main():
     (ROOT / 'js/questions/sorts.js').write_text(
         "// Fichier généré par tools/sorts_dofus.py : ne pas modifier à la main (relancer le script).\n"
         "// Une question à 10 champs par sort de classe, au rang maximal. Données : DofusDB.\n"
-        'export default {\n  cat: "Sorts",\n  items: [\n' + "\n".join(lines) + "\n  ],\n};\n", encoding='utf-8')
+        'export default {\n  cat: "Sort de classe",\n  items: [\n' + "\n".join(lines) + "\n  ],\n};\n", encoding='utf-8')
     (ROOT / 'data/sorts-dofus.json').write_text(json.dumps(dump, ensure_ascii=False, indent=1), encoding='utf-8')
     print(len(lines), 'questions écrites', file=sys.stderr)
 

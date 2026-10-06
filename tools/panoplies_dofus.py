@@ -2,7 +2,7 @@
 """Génère des questions « Quels items composent cette panoplie ? » à partir de DofusDB (api.dofusdb.fr).
 
 Usage : python3 tools/panoplies_dofus.py
-Écrit : js/questions/panoplies.js  (catégorie « Items », une question par panoplie)
+Écrit : js/questions/panoplies.js  (catégorie « Panoplie », une question par panoplie)
 Les panoplies cosmétiques (apparence) sont ignorées. Relancer le script après une mise à jour du jeu.
 """
 import json, subprocess, sys, urllib.parse
@@ -62,7 +62,7 @@ def main():
     (ROOT / 'js/questions/panoplies.js').write_text(
         "// Fichier généré par tools/panoplies_dofus.py : ne pas modifier à la main (relancer le script).\n"
         "// Une question par panoplie (hors cosmétiques) : nombre d'items, types d'items et niveau requis. Données : DofusDB.\n"
-        'export default {\n  cat: "Items",\n  items: [\n' + "\n".join(lines) + "\n  ],\n};\n", encoding='utf-8')
+        'export default {\n  cat: "Panoplie",\n  items: [\n' + "\n".join(lines) + "\n  ],\n};\n", encoding='utf-8')
     print(len(lines), 'questions écrites', file=sys.stderr)
 
 if __name__ == '__main__': main()

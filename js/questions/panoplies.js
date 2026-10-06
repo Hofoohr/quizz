@@ -1,7 +1,7 @@
 // Fichier généré par tools/panoplies_dofus.py : ne pas modifier à la main (relancer le script).
 // Une question par panoplie (hors cosmétiques) : nombre d'items, types d'items et niveau requis. Données : DofusDB.
 export default {
-  cat: "Items",
+  cat: "Panoplie",
   items: [
     {"q": "Quels items composent la « Panoplie du Bouftou » ?", "champs": [["Nombre d'items", "8"], ["Types d'items (Chapeau, Cape, Anneau…)", "Chapeau, Cape, Amulette, Anneau, Ceinture, Bottes, Arme (Marteau), Bouclier"], ["Niveau requis pour équiper toute la panoplie", "20"]], "pts": 4, "temps": 50},
     {"q": "Quels items composent la « Panoplie du Kwak de Flammes » ?", "champs": [["Nombre d'items", "7"], ["Types d'items (Chapeau, Cape, Anneau…)", "Chapeau, Cape, Amulette, Anneau, Ceinture, Bottes, Arme (Épée)"], ["Niveau requis pour équiper toute la panoplie", "42"]], "pts": 4, "temps": 50},

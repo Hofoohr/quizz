@@ -1,7 +1,7 @@
 // Fichier généré par tools/sorts_dofus.py : ne pas modifier à la main (relancer le script).
 // Une question à 10 champs par sort de classe, au rang maximal. Données : DofusDB.
 export default {
-  cat: "Sorts",
+  cat: "Sort de classe",
   items: [
     {"q": "Sort « Retour du Bâton » (Féca), au rang maximal (niveau 3)", "champs": [["Portée min / max", "1 / 4"], ["Portée modifiable ?", "Oui"], ["Ligne de vue ?", "Oui"], ["Monocible ou zone ? (précisez la zone)", "Monocible"], ["Nécessite une cible ?", "Non"], ["Utilisations par tour", "3"], ["Utilisations par cible", "2"], ["Tours de relance", "Aucun"], ["Relance globale", "Aucune"], ["Intervalle de relance initial", "Aucun"]], "pts": 5, "temps": 90},
     {"q": "Sort « Langueur » (Féca), au rang maximal (niveau 3)", "champs": [["Portée min / max", "1 / 7"], ["Portée modifiable ?", "Oui"], ["Ligne de vue ?", "Oui"], ["Monocible ou zone ? (précisez la zone)", "Monocible"], ["Nécessite une cible ?", "Non"], ["Utilisations par tour", "3"], ["Utilisations par cible", "2"], ["Tours de relance", "Aucun"], ["Relance globale", "Aucune"], ["Intervalle de relance initial", "Aucun"]], "pts": 5, "temps": 90},
