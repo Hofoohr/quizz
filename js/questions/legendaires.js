@@ -1,7 +1,7 @@
 // Fichier généré par tools/legendaires_dofus.py : ne pas modifier à la main (relancer le script).
 // Items légendaires : le passif de chaque item, puis l'item correspondant à chaque passif. Données : DofusDB.
 export default {
-  cat: "Items",
+  cat: "Légendaire",
   items: [
     ["Quel est le bonus passif de l'item légendaire « Crocobur » ?", "Appétit de Crocobur : • À chaque début de tour, le porteur s'inflige 15 de dommages dans son meilleur élément d'attaque pour infliger les mêmes dommages en vol de vie aux entités à son contact à la fin de son tour. Soigne également les attaquants de 7% des dommages occasionnés aux ennemis touchés jusqu'au prochain tour du porteur (cumulable 1 fois).", 3, 45],
     ["Quel est le bonus passif de l'item légendaire « Ciseaux du Destin » ?", "Destin Fatidique : • À chaque fin de tour, le porteur partage les dommages entre les ennemis dans un carré de taille 1 et augmente les dommages qu'ils subissent de 6% pendant 2 tours (cumulable 1 fois). Il gagne également 10 de Tacle pendant 1 tour pour chaque ennemi touché.", 3, 45],

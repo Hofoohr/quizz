@@ -2,7 +2,7 @@
 """Génère les questions sur les items légendaires à partir de DofusDB (api.dofusdb.fr).
 
 Usage : python3 tools/legendaires_dofus.py
-Écrit : js/questions/legendaires.js  (catégorie « Items »)
+Écrit : js/questions/legendaires.js  (catégorie « Légendaire »)
   - « Quel est le bonus passif de l'item légendaire X ? »  -> le passif (nom et effet)
   - « Quel item légendaire possède ce passif : … ? »        -> l'item (le titre du passif est retiré de l'énoncé, il cite souvent l'item)
 Le passif est le sort rattaché à l'item par l'effet 1175. Relancer le script après une mise à jour du jeu.
@@ -57,7 +57,7 @@ def main():
     (ROOT / 'js/questions/legendaires.js').write_text(
         "// Fichier généré par tools/legendaires_dofus.py : ne pas modifier à la main (relancer le script).\n"
         "// Items légendaires : le passif de chaque item, puis l'item correspondant à chaque passif. Données : DofusDB.\n"
-        'export default {\n  cat: "Items",\n  items: [\n' + "\n".join(lines) + "\n  ],\n};\n", encoding='utf-8')
+        'export default {\n  cat: "Légendaire",\n  items: [\n' + "\n".join(lines) + "\n  ],\n};\n", encoding='utf-8')
     print(len(out), 'questions écrites', file=sys.stderr)
 
 if __name__ == '__main__': main()
