@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère la catégorie « Succès donjons » à partir de DofusDB (api.dofusdb.fr).
+"""Génère la catégorie « Succès » à partir de DofusDB (api.dofusdb.fr).
 
 Usage : python3 tools/succes_donjons_dofus.py
 Écrit : js/questions/succes-donjons.js
@@ -102,7 +102,7 @@ def main():
     (ROOT / "js/questions/succes-donjons.js").write_text(
         "// Fichier généré par tools/succes_donjons_dofus.py : ne pas modifier à la main (relancer le script).\n"
         "// Pour chaque donjon : ses 2 succès de challenge (hors Duo) et son succès spécial.\n"
-        'export default {\n  cat: "Succès donjons",\n  items: [\n' + "\n".join(lignes) + "\n  ],\n};\n", encoding="utf-8")
+        'export default {\n  cat: "Succès",\n  items: [\n' + "\n".join(lignes) + "\n  ],\n};\n", encoding="utf-8")
     print(len(items), "questions écrites", file=sys.stderr)
 
 

@@ -1,7 +1,7 @@
 // Fichier généré par tools/succes_donjons_dofus.py : ne pas modifier à la main (relancer le script).
 // Pour chaque donjon : ses 2 succès de challenge (hors Duo) et son succès spécial.
 export default {
-  cat: "Succès donjons",
+  cat: "Succès",
   items: [
     {"q": "Quels sont les 2 succès du donjon « Crypte de Kardorim », ainsi que son succès spécial ?", "champs": [["Succès 1", "Zombie"], ["Succès 2", "Premier"], ["Succès spécial", "Lâche mes côtes"]], "pts": 3, "temps": 45},
     {"q": "Quels sont les 2 succès du donjon « Grange du Tournesol Affamé », ainsi que son succès spécial ?", "champs": [["Succès 1", "Collant"], ["Succès 2", "Premier"], ["Succès spécial", "Mauvaise graine"]], "pts": 3, "temps": 45},
