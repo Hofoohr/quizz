@@ -10,6 +10,7 @@ Pour chaque donjon, une question à 3 champs : « Quels sont les 2 succès du do
   - Les succès « 1re / 2e / 3e fois » et « Vaincre le boss » ne sont pas utilisés.
   - La description d'un succès cite son challenge par un numéro ([challenge,52]) : on va chercher le nom
     du challenge, car « Spécial » seul ne dit rien (ex. « Un Mulou dans la Bergerie »).
+    La réponse du succès spécial ajoute la description du challenge : elle dit ce qu'il faut faire.
 """
 import json
 import re
@@ -82,8 +83,8 @@ def main():
     ids = {n for ch in par_boss.values() for n in ch.values()}
     challenges, ids = {}, sorted(ids)
     for i in range(0, len(ids), PAGE):  # par lots : l'API limite la taille d'une page
-        for c in get("challenges", {"id[$in][]": ids[i:i + PAGE], "$limit": PAGE, "$select[]": ["id", "name"]})["data"]:
-            challenges[c["id"]] = fr(c)
+        for c in get("challenges", {"id[$in][]": ids[i:i + PAGE], "$limit": PAGE, "$select[]": ["id", "name", "description"]})["data"]:
+            challenges[c["id"]] = (fr(c), " ".join(c["description"]["fr"].split()))
 
     items = []
     for boss, ch in par_boss.items():
@@ -93,8 +94,8 @@ def main():
             continue
         items.append({
             "q": f"Quels sont les 2 succès du donjon « {donjons[boss]} », ainsi que son succès spécial ?",
-            "champs": [["Succès 1", challenges[ch[propres[0]]]], ["Succès 2", challenges[ch[propres[1]]]],
-                       ["Succès spécial", challenges[ch["Spécial"]]]],
+            "champs": [["Succès 1", challenges[ch[propres[0]]][0]], ["Succès 2", challenges[ch[propres[1]]][0]],
+                       ["Succès spécial", "{} : {}".format(*challenges[ch["Spécial"]])]],
             "pts": PTS, "temps": TEMPS,
         })
 
