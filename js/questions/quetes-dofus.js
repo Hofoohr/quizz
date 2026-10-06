@@ -345,7 +345,5 @@ export default {
     ["À quel Dofus est reliée la quête « Main dans la main » ?", "Dofus Tacheté", 2, 20, "Dofus Tacheté"],
     ["À quel Dofus est reliée la quête « Deux souffles, une inspiration » ?", "Dofus Tacheté", 2, 20, "Dofus Tacheté"],
     ["À quel Dofus est reliée la quête « En ce jardin qui nous unit » ?", "Dofus Tacheté", 2, 20, "Dofus Tacheté"],
-    ["À quel Dofus est reliée la quête « Dans la gueule du Dragon » ?", "Dofus Argenté Scintillant", 2, 20, "Dofus Argenté Scintillant"],
-    ["À quel Dofus est reliée la quête « Le silence est d'Aure » ?", "Dofus Argenté Scintillant", 2, 20, "Dofus Argenté Scintillant"],
   ],
 };

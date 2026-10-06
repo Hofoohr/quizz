@@ -32,8 +32,9 @@ DOFUS = {
     'Dofus Forgelave': [1656],               # « Entre le marteau et l'enclume »
     'Dofus Tacheté': [3082],                 # « Un rêve en clair-obscur »
 }
-# Dofus sans succès : chaîne de quêtes (la dernière donne le Dofus en récompense d'étape).
-QUETES_DIRECTES = {'Dofus Argenté Scintillant': [2048, 2051]}   # « Dans la gueule du Dragon », « Le silence est d'Aure »
+# Dofus sans succès : chaîne de quêtes {Dofus: [identifiants de quêtes]}. Vide pour l'instant
+# (le Dofus Argenté Scintillant a été retiré à la demande).
+QUETES_DIRECTES = {}
 
 def get(path, params):
     q = urllib.parse.urlencode(params, doseq=True, safe='[]$')
