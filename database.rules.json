@@ -1,0 +1,102 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$code": {
+        "$other": { ".validate": false },
+
+        "meta": {
+          ".read": "auth != null",
+          // Création : le créateur devient chef. Ensuite, seul le chef modifie.
+          ".write": "auth != null && ((!data.exists() && newData.child('hostUid').val() === auth.uid) || data.child('hostUid').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['hostUid', 'phase'])",
+          "hostUid": { ".validate": "newData.isString() && (!data.exists() || data.val() === newData.val())" },
+          "phase": { ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'questions' || newData.val() === 'correction' || newData.val() === 'results')" },
+          "startAt": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+
+        "players": {
+          ".read": "auth != null",
+          "$uid": {
+            // Chacun gère son propre joueur ; on ne peut s'inscrire que dans le salon d'attente.
+            ".write": "auth != null && auth.uid === $uid && (!newData.exists() || data.exists() || root.child('rooms/' + $code + '/meta/phase').val() === 'lobby')",
+            ".validate": "newData.hasChildren(['name'])",
+            "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "questions": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+          "$i": {
+            ".validate": "newData.hasChildren(['id', 'cat', 'q', 'pts', 'temps'])",
+            "id": { ".validate": "newData.isString()" },
+            "cat": { ".validate": "newData.isString() && newData.val().length <= 100" },
+            "q": { ".validate": "newData.isString() && newData.val().length <= 500" },
+            "pts": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10" },
+            "temps": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300" },
+            // Questions à plusieurs champs : seuls les intitulés sont publiés, jamais les réponses.
+            "champs": { "$k": { ".validate": "newData.isString() && newData.val().length <= 100" } },
+            // Pas de champ "a" : la réponse attendue n'est jamais publiée ici.
+            "$other": { ".validate": false }
+          }
+        },
+
+        "answers": {
+          "$i": {
+            // Les réponses des autres ne sont lisibles qu'une fois les questions terminées.
+            ".read": "auth != null && root.child('rooms/' + $code + '/meta/phase').val() !== 'questions'",
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/meta/phase').val() === 'questions' && root.child('rooms/' + $code + '/players/' + auth.uid).exists()",
+              // Réponse simple (texte) ou, pour une question à plusieurs champs, un texte par champ.
+              ".validate": "(newData.isString() && newData.val().length <= 200) || newData.hasChildren()",
+              "$f": { ".validate": "newData.isString() && newData.val().length <= 200" }
+            }
+          }
+        },
+
+        "skips": {
+          // Le chef peut terminer la question en cours : on enregistre l'heure à laquelle il l'a passée.
+          ".read": "auth != null",
+          "$i": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+            ".validate": "newData.isNumber()"
+          }
+        },
+
+        "expected": {
+          "$i": {
+            ".read": "auth != null",
+            ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+            // La réponse attendue peut être longue (ex. : texte d'un passif de Dofus) ; seul le chef l'écrit.
+            ".validate": "(newData.isString() && newData.val().length <= 1000) || newData.hasChildren()",
+            "$f": { ".validate": "newData.isString() && newData.val().length <= 1000" }
+          }
+        },
+
+        "correction": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+          "index": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+
+        "verdicts": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+          "$i": {
+            "$uid": {
+              // Un verdict global, ou un verdict par champ pour les questions à plusieurs champs.
+              ".validate": "newData.isBoolean() || newData.hasChildren()",
+              "$f": { ".validate": "newData.isBoolean()" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

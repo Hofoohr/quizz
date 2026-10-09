@@ -2,6 +2,7 @@ import { db, signIn, ref, get, set, update, remove, onValue, onDisconnect, serve
 import { QUESTIONS } from "./questions.js";
 import * as Play from "./play.js";
 import * as Corr from "./correction.js";
+import { melange } from "./tirage.js";
 
 const MIN_PLAYERS = 1;   // mets 3 quand tu auras fini de tester seul
 const MAX_PLAYERS = 10;  // limite vérifiée par l'application (les règles de la base ne peuvent pas compter les joueurs)
@@ -9,7 +10,6 @@ const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 let uid = null, code = null, meta = null, players = {};
 let playerRef = null, unsubs = [], started = false;
@@ -123,10 +123,19 @@ function render() {
 async function startGame() {
   const chosen = [...document.querySelectorAll('#cats input:checked')].map(i => i.value);
   if (!chosen.length) { showError('Choisis au moins une catégorie.'); return; }
-  const deck = shuffle(QUESTIONS.filter(q => chosen.includes(q.cat))).slice(0, +$('nb').value);
+  const pool = melange(QUESTIONS.filter(q => chosen.includes(q.cat)));   // tirage équilibré entre les groupes (ex. : les Dofus)
+  const n = +$('nb').value;
+  const deck = pool.slice(0, n);
+  // La première question est toujours une question à plusieurs champs, s'il y en a dans les catégories choisies.
+  const m = deck.findIndex(q => q.champs);
+  if (m > 0) deck.unshift(...deck.splice(m, 1));
+  else if (m === -1) { const extra = pool.slice(n).find(q => q.champs); if (extra) { deck.unshift(extra); deck.splice(n); } }
   // On publie les questions SANS la réponse attendue.
   const qs = {};
-  deck.forEach((q, i) => { qs[i] = { id: q.id, cat: q.cat, q: q.q, pts: q.pts, temps: q.temps }; });
+  deck.forEach((q, i) => {
+    qs[i] = { id: q.id, cat: q.cat, q: q.q, pts: q.pts, temps: q.temps };
+    if (q.champs) qs[i].champs = q.champs;   // intitulés des champs, sans les réponses
+  });
   try {
     await set(ref(db, `rooms/${code}/questions`), qs);
     await update(ref(db, `rooms/${code}/meta`), { phase: 'questions', startAt: serverTimestamp() });

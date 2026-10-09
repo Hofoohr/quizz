@@ -1,31 +1,27 @@
-// Banque publique de questions (visible par tous les visiteurs du site).
-// pts = points (1 à 3), temps = secondes pour répondre, type = type de question.
-export const QUESTIONS = [
-  {"id": "q001", "type": "simple", "cat": "Géographie", "q": "Quelle est la capitale du Canada ?", "a": "Ottawa", "pts": 1, "temps": 15},
-  {"id": "q002", "type": "simple", "cat": "Géographie", "q": "Quel est le plus long fleuve de France ?", "a": "La Loire", "pts": 1, "temps": 15},
-  {"id": "q003", "type": "simple", "cat": "Géographie", "q": "Quelle est la capitale de l'Australie ?", "a": "Canberra", "pts": 2, "temps": 20},
-  {"id": "q004", "type": "simple", "cat": "Géographie", "q": "Quel est le plus petit pays du monde ?", "a": "Le Vatican", "pts": 2, "temps": 20},
-  {"id": "q005", "type": "simple", "cat": "Géographie", "q": "Sur quel continent se trouve le désert de Gobi ?", "a": "L'Asie", "pts": 2, "temps": 20},
-  {"id": "q006", "type": "simple", "cat": "Histoire", "q": "En quelle année a eu lieu la prise de la Bastille ?", "a": "1789", "pts": 1, "temps": 15},
-  {"id": "q007", "type": "simple", "cat": "Histoire", "q": "Quel empereur a été vaincu à Waterloo ?", "a": "Napoléon Ier", "pts": 1, "temps": 15},
-  {"id": "q008", "type": "simple", "cat": "Histoire", "q": "Qui fut le premier président de la Ve République ?", "a": "Charles de Gaulle", "pts": 1, "temps": 15},
-  {"id": "q009", "type": "simple", "cat": "Histoire", "q": "En quelle année est tombé le mur de Berlin ?", "a": "1989", "pts": 2, "temps": 20},
-  {"id": "q010", "type": "simple", "cat": "Histoire", "q": "Quelle civilisation a construit le Machu Picchu ?", "a": "Les Incas", "pts": 2, "temps": 20},
-  {"id": "q011", "type": "simple", "cat": "Sciences", "q": "Combien de planètes compte le système solaire ?", "a": "8", "pts": 1, "temps": 15},
-  {"id": "q012", "type": "simple", "cat": "Sciences", "q": "Quelle est la planète la plus proche du Soleil ?", "a": "Mercure", "pts": 1, "temps": 15},
-  {"id": "q013", "type": "simple", "cat": "Sciences", "q": "Quel est le symbole chimique de l'or ?", "a": "Au", "pts": 2, "temps": 20},
-  {"id": "q014", "type": "simple", "cat": "Sciences", "q": "Quel est le plus grand organe du corps humain ?", "a": "La peau", "pts": 2, "temps": 20},
-  {"id": "q015", "type": "simple", "cat": "Sciences", "q": "Quel est le numéro atomique du carbone ?", "a": "6", "pts": 3, "temps": 30},
-  {"id": "q016", "type": "simple", "cat": "Arts et littérature", "q": "Qui a écrit « Les Misérables » ?", "a": "Victor Hugo", "pts": 1, "temps": 15},
-  {"id": "q017", "type": "simple", "cat": "Arts et littérature", "q": "Qui a peint « La Joconde » ?", "a": "Léonard de Vinci", "pts": 1, "temps": 15},
-  {"id": "q018", "type": "simple", "cat": "Arts et littérature", "q": "Qui a écrit « Le Petit Prince » ?", "a": "Antoine de Saint-Exupéry", "pts": 1, "temps": 15},
-  {"id": "q019", "type": "simple", "cat": "Arts et littérature", "q": "Quel réalisateur a tourné « Pulp Fiction » ?", "a": "Quentin Tarantino", "pts": 2, "temps": 20},
-  {"id": "q020", "type": "simple", "cat": "Jeux vidéo", "q": "Quelle princesse Link doit-il sauver dans la série de jeux de ce nom ?", "a": "Zelda", "pts": 1, "temps": 15},
-  {"id": "q021", "type": "simple", "cat": "Jeux vidéo", "q": "Quelle est la mascotte historique de Sega ?", "a": "Sonic", "pts": 1, "temps": 15},
-  {"id": "q022", "type": "simple", "cat": "Jeux vidéo", "q": "Quel studio français a créé Dofus ?", "a": "Ankama", "pts": 2, "temps": 20},
-  {"id": "q023", "type": "simple", "cat": "Jeux vidéo", "q": "Comment s'appelle le monde du jeu Genshin Impact ?", "a": "Teyvat", "pts": 2, "temps": 20},
-  {"id": "q024", "type": "simple", "cat": "Sport", "q": "Combien de joueurs une équipe de football aligne-t-elle sur le terrain ?", "a": "11", "pts": 1, "temps": 15},
-  {"id": "q025", "type": "simple", "cat": "Sport", "q": "Quel pays a remporté la Coupe du monde de football en 2018 ?", "a": "La France", "pts": 1, "temps": 15},
-  {"id": "q026", "type": "simple", "cat": "Sport", "q": "Dans quel sport utilise-t-on un volant ?", "a": "Le badminton", "pts": 1, "temps": 15},
-  {"id": "q027", "type": "simple", "cat": "Sport", "q": "Dans quelle ville se sont déroulés les JO d'été de 2024 ?", "a": "Paris", "pts": 1, "temps": 15}
-];
+// Banque de questions. Chaque catégorie a son fichier dans js/questions/ :
+// pour ajouter des questions, ajoute une ligne à la fin de la liste « items » du fichier voulu.
+// Pour ajouter une catégorie, crée un nouveau fichier et importe-le ci-dessous.
+// Question simple :  ["Question ?", "Réponse", points, secondes]
+// Un 5e élément facultatif, « groupe », équilibre le tirage : tous les groupes d'une catégorie ont autant de chances (voir js/tirage.js).
+// Question à plusieurs champs :
+//   { q: "Question ?", champs: [["Intitulé du champ 1", "Réponse 1"], ["Intitulé du champ 2", "Réponse 2"]], pts: 3, temps: 40 }
+// Ne change pas l'ordre des lignes existantes : l'identifiant d'une question en dépend.
+// Banque publique : les réponses sont visibles par tous les visiteurs du site.
+import quetes from "./questions/quetes.js";
+import quetesDofus from "./questions/quetes-dofus.js";
+import sorts from "./questions/sorts.js";
+import panoplies from "./questions/panoplies.js";
+import dofus from "./questions/dofus.js";
+import legendaires from "./questions/legendaires.js";
+import succesDonjons from "./questions/succes-donjons.js";
+import donjons from "./questions/donjons.js";
+import metiers from "./questions/metiers.js";
+
+const CATEGORIES = [quetes, quetesDofus, sorts, panoplies, dofus, legendaires, succesDonjons, donjons, metiers];
+
+export const QUESTIONS = CATEGORIES.flatMap((c, ci) =>
+  c.items.map((it, i) => {
+    const id = `c${ci}q${i}`;
+    if (Array.isArray(it)) { const [q, a, pts, temps, groupe] = it; return { id, type: "simple", cat: c.cat, q, a, pts, temps, groupe }; }
+    return { id, type: "multi", cat: c.cat, q: it.q, champs: it.champs.map(f => f[0]), a: it.champs.map(f => f[1]), pts: it.pts, temps: it.temps };
+  }));
