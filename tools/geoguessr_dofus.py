@@ -27,7 +27,7 @@ REJETS = ROOT / "tools" / "cartes" / "geo-rejets.json"   # cartes écartées par
 NOMBRE = 250           # cartes à garder
 GRAINE = 2026          # graine du tirage au hasard
 BUDGET = float(os.environ.get("BUDGET", 540))   # secondes par lancement
-PTS, TEMPS = 10, 45    # 45 secondes ; 10 points pour le 1er du classement (voir js/carte.js)
+PTS, TEMPS = 6, 45     # 45 secondes ; 6 points pour le 1er du classement (voir js/carte.js)
 SEL = "geo"
 
 

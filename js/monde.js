@@ -19,6 +19,33 @@ export function creerMonde(el, { surClic, surSurvol } = {}) {
   L.tileLayer('img/monde/{z}/{x}/{y}.webp', { minZoom: -5, minNativeZoom: -ZN, maxNativeZoom: 0, zoomOffset: ZN, tileSize: 256, noWrap: true, bounds: full }).addTo(map);
   map.setMaxBounds(full.pad(0.05));
   map.fitBounds(jouable);
+  // Quadrillage : contour de chaque carte existante (dès qu'on zoome un peu) avec ses coordonnées (quand elle est assez grande).
+  const Quadrillage = L.GridLayer.extend({
+    createTile(coords) {
+      const dpr = window.devicePixelRatio || 1, size = this.getTileSize().x, c = document.createElement('canvas');
+      c.width = c.height = size * dpr;
+      const k = Math.pow(2, coords.z), cw = MW * k, ch = MH * k;   // taille d'une carte, en px d'écran
+      if (cw < 16) return c;
+      const g = c.getContext('2d');
+      g.scale(dpr, dpr);
+      g.lineWidth = 1; g.font = '11px system-ui,sans-serif'; g.textBaseline = 'top';
+      const ox = coords.x * size, oy = coords.y * size;
+      for (let i = Math.floor((ox - ORIG_X * k) / cw); ORIG_X * k + i * cw < ox + size; i++) {
+        for (let j = Math.floor((oy - ORIG_Y * k) / ch); ORIG_Y * k + j * ch < oy + size; j++) {
+          if (!EXISTE.has(i + ',' + j)) continue;
+          const px = ORIG_X * k + i * cw - ox, py = ORIG_Y * k + j * ch - oy;
+          g.strokeStyle = i % 10 === 0 || j % 10 === 0 ? 'rgba(20,23,43,.85)' : 'rgba(20,23,43,.4)';
+          g.strokeRect(px + .5, py + .5, cw, ch);
+          if (cw >= 56) {
+            g.fillStyle = '#fff'; g.shadowColor = '#000'; g.shadowBlur = 3;
+            g.fillText(i + ',' + j, px + 4, py + 4); g.shadowBlur = 0;
+          }
+        }
+      }
+      return c;
+    }
+  });
+  new Quadrillage({ tileSize: 256, minZoom: -2, maxZoom: 2, bounds: full, zIndex: 5 }).addTo(map);
   // Repères tous les 10 cartes, pour s'orienter.
   const grille = L.layerGroup().addTo(map), style = { color: '#142', weight: 1, opacity: .35, interactive: false };
   for (let x = Math.ceil(minX / 10) * 10; x <= maxX; x += 10) grille.addLayer(L.polyline([toLL(x - .5, minY - .5), toLL(x - .5, maxY + .5)], x === 0 ? { ...style, opacity: .8 } : style));

@@ -12,7 +12,7 @@ Le pêcheur et le chasseur ne sont pas utilisés.
 Trois familles de fabrication complètent la catégorie, avec le niveau de métier de la recette :
 pains (paysan, compétence « Cuire »), planches (bûcheron, « Scier ») et alliages (mineur, « Fondre »).
   - « Quel pain le paysan débloque-t-il au niveau 50 ? »  /  « À quel niveau de paysan peut-on fabriquer le pain « X » ? »
-Seuls les pains « ordinaires » sont gardés (voir pain_ordinaire).
+Seuls les pains « ordinaires » sont gardés (voir pain_ordinaire) ; pour les alliages, seulement les niveaux 1 et multiples de 20.
 Un même niveau peut débloquer plusieurs ressources (ex. Bois d'Oliviolet et Bois de Pin au niveau 90) :
 la réponse les liste alors toutes. Des compétences en double (ex. deux arbres « Frêne » de niveau 1) sont fusionnées.
 """
@@ -120,6 +120,8 @@ def fabrications():
         objs = objets([r["resultId"] for r in rs], ["id", "price", "criterions"])
         if famille == "pain":
             rs = [r for r in rs if pain_ordinaire(r, objs[r["resultId"]], cereales)]
+        if famille == "alliage":   # on ne garde que les paliers du niveau 1 et des multiples de 20 (pas 30, 50, 70…)
+            rs = [r for r in rs if r["resultLevel"] == 1 or r["resultLevel"] % 20 == 0]
         par_niveau = defaultdict(list)
         for r in sorted(rs, key=lambda r: r["resultId"]):
             nom = " ".join(r["resultName"]["fr"].split())
