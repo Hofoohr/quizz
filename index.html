@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quizz Culture</title>
+<title>Quizz Culture &amp; GeoGuessr Dofus</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
 
   <section id="screen-home" class="screen active">
     <h1>Quizz Culture</h1>
-    <p class="lead">Joue entre amis : le chef du salon corrige les réponses.</p>
+    <p class="lead">Joue entre amis : quizz de culture générale ou GeoGuessr Dofus, au choix du chef du salon.</p>
     <label class="field">Ton pseudo
       <input id="pseudo" maxlength="20" placeholder="Pseudo" autocomplete="off">
     </label>
@@ -29,10 +29,24 @@
     <h2>Joueurs <small id="count"></small></h2>
     <ul id="players"></ul>
     <div id="host-box" hidden>
-      <label class="field">Nombre de questions
-        <select id="nb"><option>5</option><option selected>10</option><option>20</option></select>
-      </label>
-      <fieldset><legend>Catégories</legend><div id="cats"></div></fieldset>
+      <fieldset><legend>Jeu</legend>
+        <label class="chk"><input type="radio" name="game" value="quizz" checked> 🧠 Quizz culture</label>
+        <label class="chk"><input type="radio" name="game" value="geo"> 🗺️ GeoGuessr Dofus</label>
+      </fieldset>
+      <div id="quizz-opts">
+        <label class="field">Nombre de questions
+          <select id="nb"><option>5</option><option selected>10</option><option>20</option></select>
+        </label>
+        <fieldset><legend>Catégories</legend><div id="cats"></div></fieldset>
+      </div>
+      <div id="geo-opts" hidden>
+        <label class="field">Nombre de manches
+          <select id="geo-nb"><option>5</option><option selected>10</option></select>
+        </label>
+        <label class="field">Temps par manche
+          <select id="geo-time"><option value="20">20 s</option><option value="30" selected>30 s</option><option value="60">60 s</option></select>
+        </label>
+      </div>
       <button id="start" class="btn">Lancer la partie</button>
     </div>
     <p id="wait-msg" class="lead" hidden>En attente du lancement par le chef du salon…</p>
@@ -84,6 +98,36 @@
     <h1>Résultats</h1>
     <ol id="r-rank"></ol>
     <button id="r-home" class="btn">Nouvelle partie</button>
+    <button class="btn ghost leave-game">Quitter la partie</button>
+  </section>
+
+  <section id="screen-geo" class="screen">
+    <div id="g-wait" hidden>
+      <p id="g-wait-text" class="lead"></p>
+      <div id="g-count" class="code"></div>
+    </div>
+    <div id="g-live" hidden>
+      <div class="top"><span id="g-progress"></span><span id="g-secs"></span></div>
+      <div class="timer" id="g-timer"><i id="g-fill"></i></div>
+      <div id="g-photo"></div>
+      <div id="g-map" class="map">
+        <img src="img/world.svg" alt="Carte du monde" draggable="false">
+        <svg id="g-lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+        <div id="g-pins"></div>
+      </div>
+      <p id="g-hint" class="hint"></p>
+      <div id="g-reveal" hidden>
+        <div class="expected"><small>C'était</small><b id="g-answer"></b></div>
+        <ul id="g-rows"></ul>
+      </div>
+    </div>
+    <button class="btn ghost leave-game">Quitter la partie</button>
+  </section>
+
+  <section id="screen-georesults" class="screen">
+    <h1>Résultats</h1>
+    <ol id="gr-rank"></ol>
+    <button id="g-home" class="btn">Nouvelle partie</button>
     <button class="btn ghost leave-game">Quitter la partie</button>
   </section>
 

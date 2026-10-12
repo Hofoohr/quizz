@@ -12,7 +12,9 @@
           ".write": "auth != null && ((!data.exists() && newData.child('hostUid').val() === auth.uid) || data.child('hostUid').val() === auth.uid)",
           ".validate": "newData.hasChildren(['hostUid', 'phase'])",
           "hostUid": { ".validate": "newData.isString() && (!data.exists() || data.val() === newData.val())" },
-          "phase": { ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'questions' || newData.val() === 'correction' || newData.val() === 'results')" },
+          "phase": { ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'questions' || newData.val() === 'geo' || newData.val() === 'correction' || newData.val() === 'results')" },
+          // Jeu choisi par le chef : seul le GeoGuessr est marqué (absent = quizz).
+          "game": { ".validate": "newData.isString() && (newData.val() === 'quizz' || newData.val() === 'geo')" },
           "startAt": { ".validate": "newData.isNumber()" },
           "$other": { ".validate": false }
         },
@@ -93,6 +95,30 @@
               // Un verdict global, ou un verdict par champ pour les questions à plusieurs champs.
               ".validate": "newData.isBoolean() || newData.hasChildren()",
               "$f": { ".validate": "newData.isBoolean()" }
+            }
+          }
+        },
+
+        // --- GeoGuessr Dofus ---
+        "geo": {
+          // Configuration de la partie (durée d'une manche + identifiants des lieux), écrite par le chef.
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+          "time": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300" },
+          "rounds": { "$i": { ".validate": "newData.isString() && newData.val().length <= 20" } },
+          "$other": { ".validate": false }
+        },
+
+        "guesses": {
+          // Repère de chaque joueur (x, y en % de la carte), modifiable tant que la partie GeoGuessr est en cours.
+          ".read": "auth != null",
+          "$i": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/meta/phase').val() === 'geo' && root.child('rooms/' + $code + '/players/' + auth.uid).exists()",
+              ".validate": "newData.hasChildren(['x', 'y'])",
+              "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+              "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+              "$other": { ".validate": false }
             }
           }
         }
