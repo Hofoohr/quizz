@@ -67,6 +67,11 @@
       <img id="p-img" class="carte" alt="Carte à identifier" hidden>
       <input id="p-answer" placeholder="Ta réponse…" autocomplete="off" maxlength="200">
       <div id="p-fields" hidden></div>
+      <div id="p-mapbox" hidden>
+        <div class="zoombar"><small id="p-maphint">Clique sur la carte du monde pour placer ton repère (x vers l'est, y vers le sud).</small><small id="p-hover"></small></div>
+        <div id="p-map" class="monde"></div>
+        <p id="p-pos" class="hint"></p>
+      </div>
       <button id="p-skip" class="btn ghost" hidden>Passer la question</button>
       <p class="hint">Ta réponse est enregistrée automatiquement : ce qui est écrit quand le temps arrive à 0 est retenu.</p>
     </div>
@@ -89,6 +94,7 @@
       <h2 id="c-text"></h2>
       <img id="c-img" class="carte" alt="Carte à identifier" hidden>
       <div class="expected"><small>Réponse attendue</small><b id="c-expected"></b></div>
+      <div id="c-mapbox" hidden><div id="c-map" class="monde"></div></div>
       <ul id="c-list"></ul>
       <div id="c-host" class="btns" hidden>
         <button id="c-prev" class="btn ghost">← Précédente</button>

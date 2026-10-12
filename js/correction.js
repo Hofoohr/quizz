@@ -1,6 +1,7 @@
 import { db, ref, get, set, update, onValue } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
-import { texteDistance, classement } from "./carte.js";
+import { texteDistance, classement, lireCoord } from "./carte.js";
+import { creerMonde } from "./monde.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -8,6 +9,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 let running = false, initing = false, ctx = null;
 let list = [], players = {}, index = null, answers = {}, expected = null, verdicts = {};
 let offs = [], offQ = [];
+let monde = null, mondeCle = '';
 let allAnswers = {};   // réponses des questions « classement » (corrigées automatiquement), par numéro de question
 
 // Question « classement » (GeoGuessr) : la bonne réponse vient de la banque locale, les points de la distance.
@@ -79,11 +81,23 @@ function renderCorrection() {
       return `<li class="row ${r.points > 0 ? 'ok' : 'ko'}"><div class="who"><b>${medal} ${esc(players[id].name)}</b>${id === ctx.uid ? ' <small>(toi)</small>' : ''}<span>+${String(r.points).replace('.', ',')} pt${r.points >= 2 ? 's' : ''}</span></div>
         <div class="ans">${a ? esc(a) : '<i>(pas de réponse)</i>'}<small class="dist">${esc(texteDistance(a, bk.a[bk.coord]) || '')}</small></div></li>`;
     }).join('');
+    $('c-mapbox').hidden = false;
+    if (!monde) monde = creerMonde($('c-map'));
+    const cible = lireCoord(bk.a[bk.coord]);
+    const pins = ids.map(id => { const c = lireCoord(answers[id] && typeof answers[id] === 'object' ? answers[id][bk.coord] : answers[id]);
+      return c && { x: c[0], y: c[1], cls: id === ctx.uid ? 'me' : 'other', label: players[id].name }; }).filter(Boolean);
+    const cle = index + JSON.stringify(pins);
+    if (cle !== mondeCle) {   // on ne redessine (et ne recadre) que si quelque chose a changé
+      mondeCle = cle;
+      const t = { x: cible[0], y: cible[1] };
+      monde.invalider(); monde.afficher([...pins, { ...t, cls: 'target', label: '🎯' }], t); monde.cadrer([t, ...pins]);
+    }
     $('c-host').hidden = !ctx.isHost; $('c-wait').hidden = ctx.isHost;
     $('c-prev').disabled = index === 0;
     $('c-next').textContent = index === list.length - 1 ? 'Voir les résultats' : 'Question suivante →';
     return;
   }
+  $('c-mapbox').hidden = true;
   const v = verdicts[index] || {};
   $('c-list').innerHTML = order().map(id => {
     const a = answers[id];
