@@ -101,23 +101,25 @@
 
         // --- GeoGuessr Dofus ---
         "geo": {
-          // Configuration de la partie (durée d'une manche + identifiants des lieux), écrite par le chef.
+          // Configuration de la partie (durée max d'une manche, délai après le 1er guess, cartes de départ), écrite par le chef.
           ".read": "auth != null",
           ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
-          "time": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300" },
+          "max": { ".validate": "newData.isNumber() && newData.val() >= 30 && newData.val() <= 1800" },
+          "grace": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300" },
           "rounds": { "$i": { ".validate": "newData.isString() && newData.val().length <= 20" } },
           "$other": { ".validate": false }
         },
 
         "guesses": {
-          // Repère de chaque joueur (x, y en % de la carte), modifiable tant que la partie GeoGuessr est en cours.
+          // Guess de chaque joueur (coordonnées x, y de la carte de départ + heure) : définitif, une seule écriture par manche.
           ".read": "auth != null",
           "$i": {
             "$uid": {
-              ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/meta/phase').val() === 'geo' && root.child('rooms/' + $code + '/players/' + auth.uid).exists()",
-              ".validate": "newData.hasChildren(['x', 'y'])",
-              "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
-              "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+              ".write": "auth != null && auth.uid === $uid && !data.exists() && root.child('rooms/' + $code + '/meta/phase').val() === 'geo' && root.child('rooms/' + $code + '/players/' + auth.uid).exists()",
+              ".validate": "newData.hasChildren(['x', 'y', 'at'])",
+              "x": { ".validate": "newData.isNumber() && newData.val() >= -200 && newData.val() <= 200" },
+              "y": { ".validate": "newData.isNumber() && newData.val() >= -200 && newData.val() <= 200" },
+              "at": { ".validate": "newData.isNumber()" },
               "$other": { ".validate": false }
             }
           }

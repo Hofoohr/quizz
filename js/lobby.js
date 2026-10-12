@@ -4,7 +4,6 @@ import * as Play from "./play.js";
 import * as Corr from "./correction.js";
 import { melange } from "./tirage.js";
 import * as Geo from "./geo.js";
-import { PLACES } from "./geo-places.js";
 
 const MIN_PLAYERS = 1;   // mets 3 quand tu auras fini de tester seul
 const MAX_PLAYERS = 10;  // limite vérifiée par l'application (les règles de la base ne peuvent pas compter les joueurs)
@@ -132,10 +131,9 @@ function render() {
 const selectedGame = () => document.querySelector('input[name="game"]:checked').value;
 
 async function startGeo() {
-  const n = Math.min(+$('geo-nb').value, PLACES.length);
-  const rounds = shuffle(PLACES.map(p => p.id)).slice(0, n);
+  const rounds = Geo.pickRounds(+$('geo-nb').value);
   try {
-    await set(ref(db, `rooms/${code}/geo`), { time: +$('geo-time').value, rounds });
+    await set(ref(db, `rooms/${code}/geo`), { max: +$('geo-max').value, grace: +$('geo-grace').value, rounds });
     await update(ref(db, `rooms/${code}/meta`), { phase: 'geo', game: 'geo', startAt: serverTimestamp() });
   } catch (e) { console.error(e); showError('Impossible de lancer la partie.'); }
 }
@@ -208,7 +206,7 @@ document.querySelectorAll('input[name="game"]').forEach(r => {
 $('leave').onclick = leaveRoom;
 document.querySelectorAll('.leave-game').forEach(b => { b.onclick = leaveGame; });
 $('r-home').onclick = () => exitRoom(false);
-$('g-home').onclick = () => exitRoom(false);
+$('gr-home').onclick = () => exitRoom(false);
 
 signIn().then(user => {
   uid = user.uid;
