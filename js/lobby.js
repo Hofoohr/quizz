@@ -105,6 +105,9 @@ function render() {
   const ids = Object.keys(players);
   if (meta.phase !== 'lobby') {
     if (!started) { started = true; onDisconnect(playerRef).cancel(); }   // en partie, quitter n'efface plus le joueur
+    const host = meta.hostUid === uid, results = meta.phase === 'results';
+    $('r-home').hidden = $('gr-home').hidden = !(results && host);
+    $('r-wait').hidden = $('gr-wait').hidden = !(results && !host);
     if (meta.game === 'geo' || meta.phase === 'geo') {
       Play.stop(); Corr.stop();
       Geo.enter({ code, uid, hostUid: meta.hostUid, isHost: meta.hostUid === uid, phase: meta.phase, startAt: meta.startAt });
@@ -118,6 +121,12 @@ function render() {
     Play.stop();
     Corr.enter({ code, uid, hostUid: meta.hostUid, isHost: meta.hostUid === uid, phase: meta.phase });
     return showScreen(meta.phase === 'results' ? 'results' : 'correction');
+  }
+  if (started) {   // retour dans la salle d'attente après « Rejouer » : on arrête les jeux et on réarme le départ automatique
+    started = false;
+    Play.stop(); Corr.stop(); Geo.stop();
+    try { onDisconnect(playerRef).remove(); } catch (e) {}
+    showScreen('lobby');
   }
   const isHost = meta.hostUid === uid;
   $('players').innerHTML = ids.map(id =>
@@ -205,8 +214,17 @@ document.querySelectorAll('input[name="game"]').forEach(r => {
 });
 $('leave').onclick = leaveRoom;
 document.querySelectorAll('.leave-game').forEach(b => { b.onclick = leaveGame; });
-$('r-home').onclick = () => exitRoom(false);
-$('gr-home').onclick = () => exitRoom(false);
+// Le chef relance une partie dans le même salon : on efface la partie précédente et tout le monde revient dans la salle d'attente.
+async function replay() {
+  try {
+    await update(ref(db, `rooms/${code}`), {
+      questions: null, answers: null, skips: null, expected: null, correction: null, verdicts: null, geo: null, guesses: null,
+      'meta/phase': 'lobby', 'meta/game': null, 'meta/startAt': null
+    });
+  } catch (e) { console.error(e); showError('Impossible de relancer la partie.'); }
+}
+$('r-home').onclick = replay;
+$('gr-home').onclick = replay;
 
 signIn().then(user => {
   uid = user.uid;

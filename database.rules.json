@@ -48,6 +48,8 @@
         },
 
         "answers": {
+          // Le chef efface les réponses quand il relance une partie dans le même salon.
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
           "$i": {
             // Les réponses des autres ne sont lisibles qu'une fois les questions terminées.
             ".read": "auth != null && root.child('rooms/' + $code + '/meta/phase').val() !== 'questions'",
@@ -62,6 +64,7 @@
         },
 
         "skips": {
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
           // Le chef peut terminer la question en cours : on enregistre l'heure à laquelle il l'a passée.
           ".read": "auth != null",
           "$i": {
@@ -71,6 +74,7 @@
         },
 
         "expected": {
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
           "$i": {
             ".read": "auth != null",
             ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
@@ -111,6 +115,8 @@
         },
 
         "guesses": {
+          // Le chef efface les guess quand il relance une partie dans le même salon.
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
           // Guess de chaque joueur (coordonnées x, y de la carte de départ + heure) : définitif, une seule écriture par manche.
           ".read": "auth != null",
           "$i": {
