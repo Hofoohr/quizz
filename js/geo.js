@@ -179,7 +179,7 @@ function showImage() {
   Object.entries(DIRS).forEach(([d, [dx, dy]]) => {   // précharge les cartes voisines
     const n = at_(nav.x + dx, nav.y + dy);
     $('g-nav-' + d).disabled = !n;
-    if (n) new Image().src = img(n.id);
+    if (n && !cfg.noMove) new Image().src = img(n.id);
   });
   const dx = nav.x - target(st.i).x, dy = nav.y - target(st.i).y;
   const parts = [];
@@ -191,7 +191,7 @@ function showImage() {
 $('g-img').onerror = () => { $('g-img').hidden = true; $('g-noimg').hidden = false; };
 
 function move(dx, dy) {
-  if (!running || st.mode !== 'guess' || nav.tab !== 'explore') return;
+  if (!running || cfg.noMove || st.mode !== 'guess' || nav.tab !== 'explore') return;
   if (!at_(nav.x + dx, nav.y + dy)) return;
   nav.x += dx; nav.y += dy;
   showImage();
@@ -244,14 +244,16 @@ function layout() {
   $('g-tab-explore').classList.toggle('on', nav.tab === 'explore');
   $('g-tab-guess').classList.toggle('on', nav.tab === 'guess');
   $('g-explore').hidden = !(reveal || (guessing && nav.tab === 'explore'));
-  $('g-shot').classList.toggle('reveal', reveal);
-  $('g-navpad').hidden = reveal;
+  $('g-shot').classList.toggle('reveal', reveal || cfg.noMove);
+  $('g-navpad').hidden = reveal || cfg.noMove;
   const showMap = reveal || (guessing && nav.tab === 'guess');
   $('g-guessbox').hidden = !showMap;
   if (showMap) ensureMap();
   $('g-form').hidden = !guessing;
   $('g-reveal').hidden = !reveal;
   $('g-hint').hidden = reveal;
+  $('g-hint').innerHTML = cfg.noMove ? 'Mode <b>no move</b> : tu ne peux pas te déplacer. Devine les coordonnées de cette carte !'
+    : 'Déplace-toi de carte en carte (boutons ou flèches du clavier), puis devine les coordonnées de la carte <b>de départ</b>.';
   $('g-maphint').hidden = reveal;
 }
 
@@ -362,7 +364,7 @@ export async function enter(c) {
     const cfgVal = (await get(path('geo'))).val();
     if (!cfgVal) { running = false; return; }
     cfg = {
-      max: cfgVal.max || 300, grace: cfgVal.grace || 30,
+      max: cfgVal.max || 300, grace: cfgVal.grace || 30, noMove: !!cfgVal.nomove,
       rounds: toList(cfgVal.rounds).map(s => { const [x, y] = String(s).split(',').map(Number); return { x, y }; }).filter(r => at_(r.x, r.y))
     };
     if (!cfg.rounds.length) { running = false; return; }

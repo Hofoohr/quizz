@@ -110,6 +110,8 @@
           ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
           "max": { ".validate": "newData.isNumber() && newData.val() >= 30 && newData.val() <= 1800" },
           "grace": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300" },
+          // Mode « no move » : les joueurs ne peuvent pas se déplacer.
+          "nomove": { ".validate": "newData.isBoolean()" },
           "rounds": { "$i": { ".validate": "newData.isString() && newData.val().length <= 20" } },
           "$other": { ".validate": false }
         },
