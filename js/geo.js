@@ -40,7 +40,7 @@ const score = (g, t) => g ? Math.round(MAX_POINTS * Math.exp(-dist(g, t) / POINT
 let running = false, ctx = null, cfg = null, players = {}, guesses = {};
 let ready = { p: false, g: false }, offs = [], timer = null, finishing = false;
 let st = { i: -1, mode: 'count' };
-let nav = { i: -1, x: 0, y: 0, tab: 'explore', pin: null, autoFor: -1, revealFor: -1, revealImg: -1, zoom: 1, drawn: '' };
+let nav = { i: -1, x: 0, y: 0, tab: 'explore', pin: null, autoFor: -1, revealFor: -1, revealImg: -1, fit: true, drawn: '' };
 
 const path = p => ref(db, `rooms/${ctx.code}/${p}`);
 const target = i => cfg.rounds[i];
@@ -80,80 +80,74 @@ function totals(upTo) {
   return t;
 }
 
-// --- Carte du monde (canvas dessiné une fois) ---
-let worldDrawn = false;
-function drawWorld() {
-  if (worldDrawn) return;
-  worldDrawn = true;
-  const px = 8, c = $('g-canvas');
-  c.width = W * px; c.height = H * px;
-  const g = c.getContext('2d');
-  g.fillStyle = '#0e1220'; g.fillRect(0, 0, c.width, c.height);
-  BY.forEach(m => {
-    g.fillStyle = `hsl(${(m.sub * 47) % 360},50%,42%)`;
-    g.fillRect((m.x - minX) * px, (m.y - minY) * px, px, px);
-  });
-  g.font = `${px * 2.6}px system-ui,sans-serif`;
-  for (let x = Math.ceil(minX / 10) * 10; x <= maxX; x += 10) {
-    const X = (x - minX + .5) * px;
-    g.strokeStyle = x === 0 ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.2)'; g.lineWidth = x === 0 ? 2 : 1;
-    g.beginPath(); g.moveTo(X, 0); g.lineTo(X, c.height); g.stroke();
-    g.fillStyle = '#fff'; g.fillText(x, X + 3, px * 3);
-  }
+// --- Carte du monde (Leaflet + tuiles générées par tools/geo_tuiles_dofus.py) ---
+const PXMAP = 32, ZMAX = 3;   // une carte = 32 px au zoom maximal des tuiles
+let map = null, layer = null, bounds = null;
+const toLL = (x, y) => map.unproject([(x - minX + .5) * PXMAP, (y - minY + .5) * PXMAP], ZMAX);
+const toCell = ll => { const p = map.project(ll, ZMAX); return { x: Math.floor(p.x / PXMAP) + minX, y: Math.floor(p.y / PXMAP) + minY }; };
+
+function ensureMap() {
+  if (map) { map.invalidateSize(); if (nav.fit) { nav.fit = false; map.fitBounds(bounds); } return; }
+  const L = window.L;
+  map = L.map('g-map', { crs: L.CRS.Simple, minZoom: -1.5, maxZoom: 5, zoomSnap: 0.25, attributionControl: false });
+  bounds = L.latLngBounds(map.unproject([0, 0], ZMAX), map.unproject([W * PXMAP, H * PXMAP], ZMAX));
+  L.tileLayer('img/monde/{z}/{x}/{y}.webp', { minZoom: -3, minNativeZoom: 0, maxNativeZoom: ZMAX, tileSize: 256, noWrap: true, bounds }).addTo(map);
+  map.setMaxBounds(bounds.pad(0.15));
+  map.fitBounds(bounds);
+  nav.fit = false;
+  // Quadrillage tous les 10 : un repère de coordonnées à chaque croisement (visible quand on zoome).
+  const grid = L.layerGroup().addTo(map), style = { color: '#fff', weight: 1, opacity: .25, interactive: false };
+  for (let x = Math.ceil(minX / 10) * 10; x <= maxX; x += 10) grid.addLayer(L.polyline([toLL(x, minY - .5), toLL(x, maxY + .5)].map(p => p), x === 0 ? { ...style, opacity: .6 } : style));
   for (let y = Math.ceil(minY / 10) * 10; y <= maxY; y += 10) {
-    const Y = (y - minY + .5) * px;
-    g.strokeStyle = y === 0 ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.2)'; g.lineWidth = y === 0 ? 2 : 1;
-    g.beginPath(); g.moveTo(0, Y); g.lineTo(c.width, Y); g.stroke();
-    g.fillStyle = '#fff'; g.fillText(y, 3, Y - 3);
+    grid.addLayer(L.polyline([toLL(minX - .5, y), toLL(maxX + .5, y)], y === 0 ? { ...style, opacity: .6 } : style));
+    for (let x = Math.ceil(minX / 10) * 10; x <= maxX; x += 10) {
+      grid.addLayer(L.marker(toLL(x, y), { interactive: false, keyboard: false, icon: L.divIcon({ className: 'glabel', html: `${x},${y}`, iconSize: [0, 0] }) }));
+    }
   }
-  $('g-lines').setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const zoomClass = () => $('g-map').classList.toggle('zoomed', map.getZoom() >= 2);
+  map.on('zoomend', zoomClass); zoomClass();
+  layer = L.layerGroup().addTo(map);
+  map.on('click', e => {
+    if (!running || st.mode !== 'guess' || myGuess(st.i)) return;
+    const c = toCell(e.latlng);
+    setPin(c.x, c.y);
+  });
+  map.on('mousemove', e => { const c = toCell(e.latlng); $('g-hover').textContent = `x ${c.x}, y ${c.y}`; });
 }
-const pct = (x, y) => ({ l: (x - minX + .5) / W * 100, t: (y - minY + .5) / H * 100 });
 
 function pin(x, y, cls, label) {
-  const p = pct(x, y);
-  return `<div class="pin ${cls}" style="left:${p.l}%;top:${p.t}%" title="${esc(label)}"><span>${esc([...label].slice(0, 2).join(''))}</span></div>`;
+  const L = window.L;
+  return L.marker(toLL(x, y), { interactive: false, keyboard: false, icon: L.divIcon({
+    className: 'pinwrap', iconSize: [0, 0],
+    html: `<div class="pin ${cls}" title="${esc(label)}"><span>${esc([...label].slice(0, 2).join(''))}</span></div>` }) });
 }
-
-function applyZoom() { $('g-world').style.width = nav.zoom * 100 + '%'; }
 
 function renderWorld(reveal) {
-  let pins = '', lines = '';
-  const t = target(st.i);
-  if (reveal) {
-    const g = guesses[st.i] || {};
-    Object.keys(g).forEach(id => {
-      if (!players[id]) return;
-      const a = pct(g[id].x, g[id].y), b = pct(t.x, t.y);
-      lines += `<line x1="${a.l / 100 * W}" y1="${a.t / 100 * H}" x2="${b.l / 100 * W}" y2="${b.t / 100 * H}" class="${id === ctx.uid ? 'me' : ''}"/>`;
-      pins += pin(g[id].x, g[id].y, id === ctx.uid ? 'me' : 'other', players[id].name);
-    });
-    pins += pin(t.x, t.y, 'target', '🎯');
-  } else {
-    const m = myGuess(st.i) || nav.pin;
-    if (m) pins = pin(m.x, m.y, 'me', '📍');
-  }
-  const key = st.i + '|' + reveal + '|' + pins;
+  if (!map) return;
+  const L = window.L, t = target(st.i);
+  const g = guesses[st.i] || {};
+  const m = myGuess(st.i) || nav.pin;
+  const key = st.i + '|' + reveal + '|' + (reveal ? JSON.stringify(g) + Object.keys(players) : JSON.stringify(m));
   if (key === nav.drawn) return;
   nav.drawn = key;
-  $('g-lines').innerHTML = lines;
-  $('g-pins').innerHTML = pins;
+  layer.clearLayers();
+  if (reveal) {
+    Object.keys(g).forEach(id => {
+      if (!players[id]) return;
+      layer.addLayer(L.polyline([toLL(g[id].x, g[id].y), toLL(t.x, t.y)], { color: id === ctx.uid ? '#7c5cff' : '#fff', weight: 2, dashArray: '6 5', opacity: .9, interactive: false }));
+      layer.addLayer(pin(g[id].x, g[id].y, id === ctx.uid ? 'me' : 'other', players[id].name));
+    });
+    layer.addLayer(pin(t.x, t.y, 'target', '🎯'));
+  } else if (m) layer.addLayer(pin(m.x, m.y, 'me', '📍'));
 }
 
-// En fin de manche : on zoome sur la zone qui contient la solution et les guess.
+// En fin de manche : on cadre la solution et les guess.
 function focusReveal() {
-  if (nav.revealFor === st.i) return;
+  if (!map || nav.revealFor === st.i) return;
   nav.revealFor = st.i;
-  const t = target(st.i), pts = [t, ...Object.values(guesses[st.i] || {})];
-  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
-  const bw = Math.max(...xs) - Math.min(...xs) + 12, bh = Math.max(...ys) - Math.min(...ys) + 12;
-  nav.zoom = Math.max(1, Math.min(6, Math.floor(Math.min(W / bw, H / bh) * 2) / 2));
-  applyZoom();
-  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2, sc = $('g-scroll');
-  requestAnimationFrame(() => {
-    sc.scrollLeft = (cx - minX + .5) / W * sc.scrollWidth - sc.clientWidth / 2;
-    sc.scrollTop = (cy - minY + .5) / H * sc.scrollHeight - sc.clientHeight / 2;
-  });
+  map.invalidateSize();
+  const pts = [target(st.i), ...Object.values(guesses[st.i] || {})].map(p => toLL(p.x, p.y));
+  map.fitBounds(window.L.latLngBounds(pts), { padding: [50, 50], maxZoom: 3.5 });
 }
 
 // --- Exploration ---
@@ -201,19 +195,12 @@ function setPin(x, y) {
   $('g-submit').disabled = false;
   renderWorld(false);
 }
-$('g-world').addEventListener('click', e => {
-  if (!running || st.mode !== 'guess' || myGuess(st.i)) return;
-  const r = $('g-world').getBoundingClientRect();
-  setPin(Math.floor((e.clientX - r.left) / r.width * W) + minX, Math.floor((e.clientY - r.top) / r.height * H) + minY);
-});
 ['g-x', 'g-y'].forEach(id => {
   $(id).oninput = () => {
     const x = parseInt($('g-x').value, 10), y = parseInt($('g-y').value, 10);
-    if (Number.isFinite(x) && Number.isFinite(y)) setPin(x, y);
+    if (Number.isFinite(x) && Number.isFinite(y)) { setPin(x, y); if (map) map.panTo(toLL(nav.pin.x, nav.pin.y)); }
   };
 });
-$('g-zin').onclick = () => { nav.zoom = Math.min(8, nav.zoom + 1); applyZoom(); };
-$('g-zout').onclick = () => { nav.zoom = Math.max(1, nav.zoom - 1); applyZoom(); };
 
 function submit() {
   const i = st.i;
@@ -238,10 +225,13 @@ function layout() {
   $('g-explore').hidden = !(reveal || (guessing && nav.tab === 'explore'));
   $('g-shot').classList.toggle('reveal', reveal);
   $('g-navpad').hidden = reveal;
-  $('g-guessbox').hidden = !(reveal || (guessing && nav.tab === 'guess'));
+  const showMap = reveal || (guessing && nav.tab === 'guess');
+  $('g-guessbox').hidden = !showMap;
+  if (showMap) ensureMap();
   $('g-form').hidden = !guessing;
   $('g-reveal').hidden = !reveal;
   $('g-hint').hidden = reveal;
+  $('g-maphint').hidden = reveal;
 }
 
 function render(now) {
@@ -322,9 +312,9 @@ function tick() {
   const s = compute(now);
   if (s.i !== nav.i) {   // nouvelle manche : on repart de la carte de départ
     const t = target(s.i);
-    nav = { ...nav, i: s.i, x: t.x, y: t.y, tab: 'explore', pin: null, drawn: '', zoom: 1 };
-    st = s; applyZoom(); $('g-x').value = ''; $('g-y').value = ''; showImage();
-    $('g-scroll').scrollTo(0, 0);
+    nav = { ...nav, i: s.i, x: t.x, y: t.y, tab: 'explore', pin: null, drawn: '', fit: true };
+    st = s; $('g-x').value = ''; $('g-y').value = ''; showImage();
+    if (map) layer.clearLayers();
   }
   st = s;
   if (s.mode === 'reveal' || s.mode === 'over') {
@@ -345,7 +335,7 @@ export async function enter(c) {
   if (running) { if (before !== c.phase) tick(); return; }
   running = true; finishing = false; ready = { p: false, g: false };
   st = { i: -1, mode: 'count' };
-  nav = { i: -1, x: 0, y: 0, tab: 'explore', pin: null, autoFor: -1, revealFor: -1, revealImg: -1, zoom: 1, drawn: '' };
+  nav = { i: -1, x: 0, y: 0, tab: 'explore', pin: null, autoFor: -1, revealFor: -1, revealImg: -1, fit: true, drawn: '' };
   try {
     await clockReady;
     const cfgVal = (await get(path('geo'))).val();
@@ -355,7 +345,6 @@ export async function enter(c) {
       rounds: toList(cfgVal.rounds).map(s => { const [x, y] = String(s).split(',').map(Number); return { x, y }; }).filter(r => at_(r.x, r.y))
     };
     if (!cfg.rounds.length) { running = false; return; }
-    drawWorld();
     offs.push(onValue(path('players'), s => { players = s.val() || {}; ready.p = true; if (running) render(serverNow()); }));
     offs.push(onValue(path('guesses'), s => { guesses = s.val() || {}; ready.g = true; if (running) render(serverNow()); }));
     timer = setInterval(tick, 250);

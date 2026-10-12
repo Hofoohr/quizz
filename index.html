@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Quizz Culture &amp; GeoGuessr Dofus</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -140,15 +141,8 @@
       </div>
 
       <div id="g-guessbox" hidden>
-        <div class="zoombar"><small>Clique sur la carte du monde (x vers l'est, y vers le sud)</small>
-          <span><button id="g-zout" class="btn ghost">−</button><button id="g-zin" class="btn ghost">+</button></span></div>
-        <div id="g-scroll" class="wscroll">
-          <div id="g-world" class="world">
-            <canvas id="g-canvas"></canvas>
-            <svg id="g-lines" preserveAspectRatio="none"></svg>
-            <div id="g-pins"></div>
-          </div>
-        </div>
+        <div class="zoombar"><small id="g-maphint">Clique sur la carte du monde pour placer ton repère (x vers l'est, y vers le sud).</small><small id="g-hover"></small></div>
+        <div id="g-map"></div>
         <div id="g-form" class="coords">
           <label>x <input id="g-x" type="number" inputmode="numeric" placeholder="x"></label>
           <label>y <input id="g-y" type="number" inputmode="numeric" placeholder="y"></label>
@@ -169,6 +163,7 @@
 
 </main>
 <div id="error" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script type="module" src="js/lobby.js"></script>
 </body>
 </html>
