@@ -2,7 +2,7 @@ import { db, signIn, ref, get, set, update, remove, onValue, onDisconnect, serve
 import { QUESTIONS } from "./questions.js";
 import * as Play from "./play.js";
 import * as Corr from "./correction.js";
-import { melange } from "./tirage.js";
+import { melange, composer } from "./tirage.js";
 import * as Geo from "./geo.js";
 
 const MIN_PLAYERS = 1;   // mets 3 quand tu auras fini de tester seul
@@ -142,13 +142,13 @@ async function startGame() {
   if (selectedGame() === 'geo') return startGeo();
   const chosen = [...document.querySelectorAll('#cats input:checked')].map(i => i.value);
   if (!chosen.length) { showError('Choisis au moins une catégorie.'); return; }
-  const pool = melange(QUESTIONS.filter(q => chosen.includes(q.cat)));   // tirage équilibré entre les groupes (ex. : les Dofus)
+  const bank = QUESTIONS.filter(q => chosen.includes(q.cat));
   const n = +$('nb').value;
-  const deck = pool.slice(0, n);
+  const deck = composer(bank, n);   // répartition entre les catégories (poids dans js/tirage.js), puis tirage au hasard dans chacune
   // La première question est toujours une question à plusieurs champs, s'il y en a dans les catégories choisies.
   const m = deck.findIndex(q => q.champs);
   if (m > 0) deck.unshift(...deck.splice(m, 1));
-  else if (m === -1) { const extra = pool.slice(n).find(q => q.champs); if (extra) { deck.unshift(extra); deck.splice(n); } }
+  else if (m === -1) { const extra = melange(bank).find(q => q.champs && !deck.includes(q)); if (extra) { deck.unshift(extra); deck.splice(n); } }
   // On publie les questions SANS la réponse attendue.
   const qs = {};
   deck.forEach((q, i) => {
