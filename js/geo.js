@@ -9,7 +9,6 @@ const REVEAL_MS = 15000;     // temps d'affichage de la solution après chaque m
 const END_GRACE_MS = 1500;   // délai avant la fin de partie (laisse arriver les dernières écritures)
 const MAX_POINTS = 1000;
 const POINTS_SCALE = 15;     // 1000 pts sur la bonne carte, ~370 pts à 15 cartes de distance
-const WATERMARK = 0.075;     // part basse de l'image rognée (filigrane « DofusDB »)
 const IMG_RATIO = 955 / 485;
 const img = id => `https://api.dofusdb.fr/img/maps/0.5/${id}.jpg`;
 
@@ -22,7 +21,6 @@ const fmt = n => String(Math.round(n * 10) / 10).replace('.', ',');
 const BY = new Map(MAPS.map(m => [m[0] + ',' + m[1], { x: m[0], y: m[1], id: m[2], sub: m[3] }]));
 const minX = Math.min(...MAPS.map(m => m[0])), maxX = Math.max(...MAPS.map(m => m[0]));
 const minY = Math.min(...MAPS.map(m => m[1])), maxY = Math.max(...MAPS.map(m => m[1]));
-const W = maxX - minX + 1, H = maxY - minY + 1;
 const at_ = (x, y) => BY.get(x + ',' + y);
 const DIRS = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };   // x vers l'est, y vers le sud (comme dans Dofus)
 
@@ -81,53 +79,55 @@ function totals(upTo) {
 }
 
 // --- Carte du monde (Leaflet + tuiles générées par tools/geo_tuiles_dofus.py) ---
-const PXMAP = 64, ZMAX = 4;   // une carte = 64 px au zoom maximal des tuiles
+// Repère de la carte du monde (échelle 1 de DofusDB) : la carte (x, y) occupe [ORIG_X + x * MW, ORIG_Y + y * MH] ; Leaflet : 1 unité = 1 px à l'échelle 1.
+const ORIG_X = 6480, ORIG_Y = 4944, MW = 69.5, MH = 49.7, IMG_W = 10000, IMG_H = 8000, ZN = 4;   // ZN : niveaux de tuiles sous l'échelle 1
 let map = null, layer = null, bounds = null;
-const toLL = (x, y) => map.unproject([(x - minX + .5) * PXMAP, (y - minY + .5) * PXMAP], ZMAX);
-const toCell = ll => { const p = map.project(ll, ZMAX); return { x: Math.floor(p.x / PXMAP) + minX, y: Math.floor(p.y / PXMAP) + minY }; };
+const toLL = (x, y) => map.unproject([ORIG_X + (x + .5) * MW, ORIG_Y + (y + .5) * MH], 0);
+const toCell = ll => { const p = map.project(ll, 0); return { x: Math.floor((p.x - ORIG_X) / MW), y: Math.floor((p.y - ORIG_Y) / MH) }; };
 
 function ensureMap() {
   if (map) { map.invalidateSize(); if (nav.fit) { nav.fit = false; map.fitBounds(bounds); } return; }
   const L = window.L;
-  map = L.map('g-map', { crs: L.CRS.Simple, minZoom: -1.5, maxZoom: 5, zoomSnap: 0.25, attributionControl: false });
-  bounds = L.latLngBounds(map.unproject([0, 0], ZMAX), map.unproject([W * PXMAP, H * PXMAP], ZMAX));
-  L.tileLayer('img/monde/{z}/{x}/{y}.webp', { minZoom: -3, minNativeZoom: 0, maxNativeZoom: ZMAX, tileSize: 256, noWrap: true, bounds }).addTo(map);
-  map.setMaxBounds(bounds.pad(0.15));
+  map = L.map('g-map', { crs: L.CRS.Simple, minZoom: -5, maxZoom: 2, zoomSnap: 0.25, attributionControl: false });
+  const full = L.latLngBounds(map.unproject([0, 0], 0), map.unproject([IMG_W, IMG_H], 0));
+  bounds = L.latLngBounds(toLL(minX - 1, minY - 1), toLL(maxX + 1, maxY + 1));   // la zone jouable
+  // La carte illustrée de DofusDB : les tuiles ne vont que jusqu'à l'échelle 1, au-delà c'est un agrandissement (la carte garde le même aspect).
+  L.tileLayer('img/monde/{z}/{x}/{y}.webp', { minZoom: -5, minNativeZoom: -ZN, maxNativeZoom: 0, zoomOffset: ZN, tileSize: 256, noWrap: true, bounds: full }).addTo(map);
+  map.setMaxBounds(full.pad(0.05));
   map.fitBounds(bounds);
   nav.fit = false;
-  // Quadrillage : contour de chaque carte (dès qu'on zoome un peu) avec ses coordonnées (quand elle est assez grande).
+  // Quadrillage : contour de chaque carte existante (dès qu'on zoome un peu) avec ses coordonnées (quand elle est assez grande).
   const Grid = L.GridLayer.extend({
     createTile(coords) {
       const dpr = window.devicePixelRatio || 1, size = this.getTileSize().x, c = document.createElement('canvas');
       c.width = c.height = size * dpr;
-      const g = c.getContext('2d'), cell = PXMAP * Math.pow(2, coords.z - ZMAX);   // taille d'une carte, en px d'écran
-      if (cell < 10) return c;
+      const k = Math.pow(2, coords.z), cw = MW * k, ch = MH * k;   // taille d'une carte, en px d'écran
+      if (cw < 16) return c;
+      const g = c.getContext('2d');
       g.scale(dpr, dpr);
       g.lineWidth = 1; g.font = '11px system-ui,sans-serif'; g.textBaseline = 'top';
       const ox = coords.x * size, oy = coords.y * size;
-      for (let i = Math.floor(ox / cell); i * cell < ox + size; i++) {
-        for (let j = Math.floor(oy / cell); j * cell < oy + size; j++) {
-          const x = i + minX, y = j + minY;
-          if (!BY.has(x + ',' + y)) continue;
-          const px = i * cell - ox, py = j * cell - oy;
-          const major = x % 10 === 0 || y % 10 === 0;
-          g.strokeStyle = major ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.22)';
-          g.strokeRect(px + .5, py + .5, cell, cell);
-          if (cell >= 56) {
+      for (let i = Math.floor((ox - ORIG_X * k) / cw); ORIG_X * k + i * cw < ox + size; i++) {
+        for (let j = Math.floor((oy - ORIG_Y * k) / ch); ORIG_Y * k + j * ch < oy + size; j++) {
+          if (!BY.has(i + ',' + j)) continue;
+          const px = ORIG_X * k + i * cw - ox, py = ORIG_Y * k + j * ch - oy;
+          g.strokeStyle = i % 10 === 0 || j % 10 === 0 ? 'rgba(20,23,43,.85)' : 'rgba(20,23,43,.4)';
+          g.strokeRect(px + .5, py + .5, cw, ch);
+          if (cw >= 56) {
             g.fillStyle = '#fff'; g.shadowColor = '#000'; g.shadowBlur = 3;
-            g.fillText(x + ',' + y, px + 4, py + 4); g.shadowBlur = 0;
+            g.fillText(i + ',' + j, px + 4, py + 4); g.shadowBlur = 0;
           }
         }
       }
       return c;
     }
   });
-  new Grid({ tileSize: 256, minZoom: 1.5, maxZoom: 5, bounds, zIndex: 5 }).addTo(map);
+  new Grid({ tileSize: 256, minZoom: -2, maxZoom: 2, bounds: full, zIndex: 5 }).addTo(map);
   // Repères tous les 10 : visibles même en vue d'ensemble.
-  const grid = L.layerGroup().addTo(map), style = { color: '#fff', weight: 1, opacity: .25, interactive: false };
-  for (let x = Math.ceil(minX / 10) * 10; x <= maxX; x += 10) grid.addLayer(L.polyline([toLL(x, minY - .5), toLL(x, maxY + .5)], x === 0 ? { ...style, opacity: .6 } : style));
-  for (let y = Math.ceil(minY / 10) * 10; y <= maxY; y += 10) grid.addLayer(L.polyline([toLL(minX - .5, y), toLL(maxX + .5, y)], y === 0 ? { ...style, opacity: .6 } : style));
-    layer = L.layerGroup().addTo(map);
+  const grid = L.layerGroup().addTo(map), style = { color: '#142', weight: 1, opacity: .35, interactive: false };
+  for (let x = Math.ceil(minX / 10) * 10; x <= maxX; x += 10) grid.addLayer(L.polyline([toLL(x - .5, minY - .5), toLL(x - .5, maxY + .5)], x === 0 ? { ...style, opacity: .8 } : style));
+  for (let y = Math.ceil(minY / 10) * 10; y <= maxY; y += 10) grid.addLayer(L.polyline([toLL(minX - .5, y - .5), toLL(maxX + .5, y - .5)], y === 0 ? { ...style, opacity: .8 } : style));
+  layer = L.layerGroup().addTo(map);
   map.on('click', e => {
     if (!running || st.mode !== 'guess' || myGuess(st.i)) return;
     const c = toCell(e.latlng);
@@ -168,7 +168,7 @@ function focusReveal() {
   nav.revealFor = st.i;
   map.invalidateSize();
   const pts = [target(st.i), ...Object.values(guesses[st.i] || {})].map(p => toLL(p.x, p.y));
-  map.fitBounds(window.L.latLngBounds(pts), { padding: [50, 50], maxZoom: 3.5 });
+  map.fitBounds(window.L.latLngBounds(pts), { padding: [50, 50], maxZoom: 1 });
 }
 
 // --- Exploration ---
