@@ -1,6 +1,6 @@
 import { db, ref, get, set, update, onValue } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
-import { texteDistance } from "./carte.js";
+import { texteDistance, classement } from "./carte.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -8,6 +8,12 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 let running = false, initing = false, ctx = null;
 let list = [], players = {}, index = null, answers = {}, expected = null, verdicts = {};
 let offs = [], offQ = [];
+let allAnswers = {};   // réponses des questions « classement » (corrigées automatiquement), par numéro de question
+
+// Question « classement » (GeoGuessr) : la bonne réponse vient de la banque locale, les points de la distance.
+const bankOf = q => QUESTIONS.find(x => x.id === q.id) || {};
+const isRank = q => !!(q && bankOf(q).classement);
+const rankOf = j => { const q = list[j]; return classement(allAnswers[j], bankOf(q).a[bankOf(q).coord], Object.keys(players), q.pts); };
 
 // Intitulés des champs d'une question à plusieurs champs (null pour une question simple).
 const fieldsOf = q => (q && q.champs ? Object.values(q.champs) : null);
@@ -63,6 +69,21 @@ function renderCorrection() {
     $('c-expected').innerHTML = fields.map((l, k) =>
       `<span class="exp-line">${esc(l)} : <b>${esc(expected && expected[k] != null ? expected[k] : '…')}</b></span>`).join('');
   } else $('c-expected').textContent = expected ?? '…';
+  if (isRank(q)) {
+    const bk = bankOf(q), res = rankOf(index), ids = Object.keys(res).sort((a, b) =>
+      (res[a].rang ?? 1e9) - (res[b].rang ?? 1e9) || players[a].name.localeCompare(players[b].name));
+    $('c-expected').innerHTML = `<span class="exp-line">${esc(fields[0])} : <b>${esc(bk.a[bk.coord])}</b></span>`;
+    $('c-list').innerHTML = ids.map(id => {
+      const r = res[id], a = (answers[id] && typeof answers[id] === 'object') ? answers[id][bk.coord] : answers[id];
+      const medal = r.rang === null ? '–' : ['🥇', '🥈', '🥉'][r.rang - 1] || r.rang + '.';
+      return `<li class="row ${r.points > 0 ? 'ok' : 'ko'}"><div class="who"><b>${medal} ${esc(players[id].name)}</b>${id === ctx.uid ? ' <small>(toi)</small>' : ''}<span>+${String(r.points).replace('.', ',')} pt${r.points >= 2 ? 's' : ''}</span></div>
+        <div class="ans">${a ? esc(a) : '<i>(pas de réponse)</i>'}<small class="dist">${esc(texteDistance(a, bk.a[bk.coord]) || '')}</small></div></li>`;
+    }).join('');
+    $('c-host').hidden = !ctx.isHost; $('c-wait').hidden = ctx.isHost;
+    $('c-prev').disabled = index === 0;
+    $('c-next').textContent = index === list.length - 1 ? 'Voir les résultats' : 'Question suivante →';
+    return;
+  }
   const v = verdicts[index] || {};
   $('c-list').innerHTML = order().map(id => {
     const a = answers[id];
@@ -103,6 +124,7 @@ function renderResults() {
   const rows = Object.keys(players).map(id => {
     let score = 0;
     list.forEach((q, j) => {
+      if (isRank(q)) { score += rankOf(j)[id].points; return; }
       const n = fieldsOf(q) ? fieldsOf(q).length : 1;
       score += q.pts * (result(q, (verdicts[j] || {})[id]) || 0) / n;   // plusieurs champs : points au prorata des champs justes
     });
@@ -137,7 +159,7 @@ $('c-prev').onclick = () => {
 
 $('c-next').onclick = async () => {
   const j = verdicts[index] || {};
-  const pending = Object.keys(players).filter(id => result(list[index], j[id]) === null).length;
+  const pending = isRank(list[index]) ? 0 : Object.keys(players).filter(id => result(list[index], j[id]) === null).length;
   if (pending && !confirm(`${pending} réponse(s) pas encore corrigée(s) : elles compteront comme fausses. Continuer ?`)) return;
   try {
     if (index === list.length - 1) await update(path('meta'), { phase: 'results' });
@@ -154,6 +176,7 @@ export async function enter(c) {
     const snap = await get(path('questions'));
     const v = snap.val() || [];
     list = Array.isArray(v) ? v : Object.values(v);
+    list.forEach((q, j) => { if (isRank(q)) offs.push(onValue(path(`answers/${j}`), s => { allAnswers[j] = s.val() || {}; render(); })); });
     offs.push(onValue(path('players'), s => { players = s.val() || {}; render(); }));
     offs.push(onValue(path('verdicts'), s => { verdicts = s.val() || {}; render(); }));
     offs.push(onValue(path('correction/index'), s => {
@@ -169,5 +192,5 @@ export function stop() {
   running = false; initing = false;
   offs.forEach(u => u()); offQ.forEach(u => u());
   offs = []; offQ = [];
-  list = []; players = {}; verdicts = {}; answers = {}; expected = null; index = null; ctx = null;
+  list = []; players = {}; verdicts = {}; allAnswers = {}; answers = {}; expected = null; index = null; ctx = null;
 }

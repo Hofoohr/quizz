@@ -25,3 +25,23 @@ export function texteDistance(reponse, attendu) {
   const n = Math.round(d * 10) / 10;
   return `Distance : ${String(n).replace('.', ',')} carte${n >= 2 ? 's' : ''}`;
 }
+
+// Questions « classement » (GeoGuessr) : les joueurs sont classés selon leur distance, du plus proche au plus loin.
+// reponses = { idJoueur: réponse }, joueurs = liste des identifiants. Rang ex æquo = meilleur rang du groupe.
+// Points = pts × (n − rang + 1) / n, n = nombre de joueurs ; pas de réponse lisible = 0 point.
+// Retourne { idJoueur: { d (distance ou null), rang (ou null), points } }.
+export function classement(reponses, attendu, joueurs, pts) {
+  const n = joueurs.length;
+  const dist = {};
+  joueurs.forEach(id => {
+    const r = reponses && reponses[id];
+    dist[id] = distance(r && typeof r === 'object' ? r[0] : r, attendu);
+  });
+  const out = {};
+  joueurs.forEach(id => {
+    if (dist[id] === null) { out[id] = { d: null, rang: null, points: 0 }; return; }
+    const rang = 1 + joueurs.filter(o => dist[o] !== null && dist[o] < dist[id] - 1e-9).length;
+    out[id] = { d: dist[id], rang, points: Math.round(pts * (n - rang + 1) / n * 10) / 10 };
+  });
+  return out;
+}
