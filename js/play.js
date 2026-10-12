@@ -1,4 +1,5 @@
 import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockReady } from "./firebase.js";
+import { QUESTIONS } from "./questions.js";
 
 const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
 const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
@@ -13,6 +14,9 @@ const inputs = () => [...document.querySelectorAll('#p-fields input')];
 let running = false, ctx = null, list = [], sched = [];
 let skips = {}, offSkips = null;
 let timer = null, saveTimer = null, cur = null, lockedFor = null, lastSaved = {}, finishing = false;
+
+// Image d'une question « carte » : elle est dans la banque locale (l'id publié suffit à la retrouver), pas dans la base.
+const imageOf = q => (QUESTIONS.find(x => x.id === q.id) || {}).img || null;
 
 function view(name) {
   ['live', 'wait', 'end'].forEach(v => { $('p-' + v).hidden = v !== name; });
@@ -52,6 +56,9 @@ function openQuestion(i) {
   $('p-cat').textContent = q.cat;
   $('p-pts').textContent = q.pts + ' pt' + (q.pts > 1 ? 's' : '');
   $('p-text').textContent = q.q;
+  const src = imageOf(q), img = $('p-img');
+  img.hidden = !src;
+  if (src) img.src = src; else img.removeAttribute('src');
   const fields = fieldsOf(q);
   const input = $('p-answer');
   input.hidden = !!fields; $('p-fields').hidden = !fields;
@@ -143,6 +150,7 @@ export async function enter(c) {
     const v = snap.val() || [];
     list = Array.isArray(v) ? v : Object.values(v);
     if (!list.length) { running = false; return; }
+    list.forEach(q => { const src = imageOf(q); if (src) new Image().src = src; });   // on charge les cartes à l'avance
     offSkips = onValue(ref(db, `rooms/${ctx.code}/skips`), s => { skips = s.val() || {}; });
     buildSched();
     timer = setInterval(tick, 200);

@@ -1,5 +1,6 @@
 import { db, ref, get, set, update, onValue } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
+import { texteDistance } from "./carte.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -54,6 +55,9 @@ function renderCorrection() {
   $('c-pts').textContent = q.pts + ' pt' + (q.pts > 1 ? 's' : '');
   $('c-cat').textContent = q.cat;
   $('c-text').textContent = q.q;
+  const bank = QUESTIONS.find(x => x.id === q.id) || {};   // image et champ « coordonnées » d'une question « carte »
+  $('c-img').hidden = !bank.img;
+  if (bank.img) $('c-img').src = bank.img; else $('c-img').removeAttribute('src');
   const fields = fieldsOf(q);
   if (fields) {
     $('c-expected').innerHTML = fields.map((l, k) =>
@@ -70,7 +74,11 @@ function renderCorrection() {
         const verdict = ctx.isHost
           ? `<button class="v${val === true ? ' on' : ''}" data-id="${id}" data-k="${k}" data-val="1">✅</button><button class="v${val === false ? ' on' : ''}" data-id="${id}" data-k="${k}" data-val="0">❌</button>`
           : `<span class="badge">${val === true ? '✅' : val === false ? '❌' : '…'}</span>`;
-        const t = a && typeof a === 'object' && a[k] != null ? esc(a[k]) : '<i>(pas de réponse)</i>';
+        let t = a && typeof a === 'object' && a[k] != null ? esc(a[k]) : '<i>(pas de réponse)</i>';
+        if (k === bank.coord && expected) {   // champ « coordonnées » : distance à la bonne carte
+          const d = texteDistance(a && typeof a === 'object' ? a[k] : null, expected[k]);
+          if (d) t += `<small class="dist">${esc(d)}</small>`;
+        }
         return `<div class="sub ${val === true ? 'ok' : val === false ? 'ko' : ''}"><span class="lbl">${esc(label)}</span><span class="ans">${t}</span><span class="verdict">${verdict}</span></div>`;
       }).join('');
       return `<li class="row multi"><div class="who"><b>${esc(players[id].name)}</b>${id === ctx.uid ? ' <small>(toi)</small>' : ''}${got === null ? '' : `<span>${got} / ${fields.length}</span>`}</div>${subs}</li>`;

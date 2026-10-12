@@ -64,3 +64,7 @@ fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 1.2rem}
 .expected .exp-line{display:block;margin-top:.3rem;font-size:1rem;font-weight:400;color:var(--text)}
 .expected .exp-line b{display:inline;margin:0;font-size:1rem}
 @media(max-width:480px){.sub{grid-template-columns:1fr auto}.sub .lbl{grid-column:1/-1}}
+
+/* --- Questions « carte » --- */
+.carte{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px;margin:.2rem 0 1rem;background:var(--bg)}
+.sub .dist{display:block;margin-top:.2rem;font-size:.85rem;color:var(--muted)}
