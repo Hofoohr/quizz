@@ -88,8 +88,6 @@ fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 1.2rem}
 .zoombar{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin:.6rem 0 .4rem}
 #g-map{height:min(70vh,520px);border:1px solid var(--line);border-radius:8px;background:#0e1220;cursor:crosshair}
 .pinwrap{background:none;border:none}
-.glabel{color:#fff;font-size:10px;white-space:nowrap;text-shadow:0 0 3px #000,0 0 3px #000;pointer-events:none;transform:translate(3px,3px);display:none}
-#g-map.zoomed .glabel{display:block}
 .pin{position:absolute;left:0;top:0;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;background:#fff;color:#222;border:2px solid #222;pointer-events:none}
 .pin.me{background:var(--accent);color:#fff;border-color:#fff}
 .pin.target{background:var(--good);border-color:#fff;font-size:.85rem}

@@ -3,11 +3,11 @@
 
 Usage : python3 tools/geo_tuiles_dofus.py
 Lit   : js/geo-maps.js        (généré par tools/geo_cartes_dofus.py)
-Écrit : img/monde/{z}/{x}/{y}.webp   (z = 0..3 ; z = 3 : une carte = 32 px)
+Écrit : img/monde/{z}/{x}/{y}.webp   (z = 0..4 ; z = 4 : une carte = 64 px)
         et affiche les constantes (minX, minY, largeur, hauteur) attendues par js/geo.js.
 
 Chaque carte est téléchargée sur DofusDB (api.dofusdb.fr/img/maps, échelle 0,25), son filigrane est rogné, puis elle est
-réduite à 32 x 32 px et placée à sa coordonnée. Les miniatures sont mises en cache dans tools/.cache-tuiles (non versionné).
+réduite à 64 x 64 px et placée à sa coordonnée. Les miniatures sont mises en cache dans tools/.cache-tuiles-64 (non versionné).
 Les cartes appartiennent à Ankama ; DofusDB en est la source.
 """
 import io
@@ -22,11 +22,11 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-CACHE = ROOT / "tools" / ".cache-tuiles"
+CACHE = ROOT / "tools" / ".cache-tuiles-64"
 OUT = ROOT / "img" / "monde"
-PX = 32            # taille d'une carte au zoom maximal
+PX = 64            # taille d'une carte au zoom maximal
 TUILE = 256
-ZMAX = 3
+ZMAX = 4
 ROGNE = 0.075      # part basse rognée (filigrane « DofusDB »)
 FOND = (14, 18, 32)
 

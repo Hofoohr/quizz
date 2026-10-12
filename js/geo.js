@@ -81,7 +81,7 @@ function totals(upTo) {
 }
 
 // --- Carte du monde (Leaflet + tuiles générées par tools/geo_tuiles_dofus.py) ---
-const PXMAP = 32, ZMAX = 3;   // une carte = 32 px au zoom maximal des tuiles
+const PXMAP = 64, ZMAX = 4;   // une carte = 64 px au zoom maximal des tuiles
 let map = null, layer = null, bounds = null;
 const toLL = (x, y) => map.unproject([(x - minX + .5) * PXMAP, (y - minY + .5) * PXMAP], ZMAX);
 const toCell = ll => { const p = map.project(ll, ZMAX); return { x: Math.floor(p.x / PXMAP) + minX, y: Math.floor(p.y / PXMAP) + minY }; };
@@ -95,18 +95,39 @@ function ensureMap() {
   map.setMaxBounds(bounds.pad(0.15));
   map.fitBounds(bounds);
   nav.fit = false;
-  // Quadrillage tous les 10 : un repère de coordonnées à chaque croisement (visible quand on zoome).
-  const grid = L.layerGroup().addTo(map), style = { color: '#fff', weight: 1, opacity: .25, interactive: false };
-  for (let x = Math.ceil(minX / 10) * 10; x <= maxX; x += 10) grid.addLayer(L.polyline([toLL(x, minY - .5), toLL(x, maxY + .5)].map(p => p), x === 0 ? { ...style, opacity: .6 } : style));
-  for (let y = Math.ceil(minY / 10) * 10; y <= maxY; y += 10) {
-    grid.addLayer(L.polyline([toLL(minX - .5, y), toLL(maxX + .5, y)], y === 0 ? { ...style, opacity: .6 } : style));
-    for (let x = Math.ceil(minX / 10) * 10; x <= maxX; x += 10) {
-      grid.addLayer(L.marker(toLL(x, y), { interactive: false, keyboard: false, icon: L.divIcon({ className: 'glabel', html: `${x},${y}`, iconSize: [0, 0] }) }));
+  // Quadrillage : contour de chaque carte (dès qu'on zoome un peu) avec ses coordonnées (quand elle est assez grande).
+  const Grid = L.GridLayer.extend({
+    createTile(coords) {
+      const dpr = window.devicePixelRatio || 1, size = this.getTileSize().x, c = document.createElement('canvas');
+      c.width = c.height = size * dpr;
+      const g = c.getContext('2d'), cell = PXMAP * Math.pow(2, coords.z - ZMAX);   // taille d'une carte, en px d'écran
+      if (cell < 10) return c;
+      g.scale(dpr, dpr);
+      g.lineWidth = 1; g.font = '11px system-ui,sans-serif'; g.textBaseline = 'top';
+      const ox = coords.x * size, oy = coords.y * size;
+      for (let i = Math.floor(ox / cell); i * cell < ox + size; i++) {
+        for (let j = Math.floor(oy / cell); j * cell < oy + size; j++) {
+          const x = i + minX, y = j + minY;
+          if (!BY.has(x + ',' + y)) continue;
+          const px = i * cell - ox, py = j * cell - oy;
+          const major = x % 10 === 0 || y % 10 === 0;
+          g.strokeStyle = major ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.22)';
+          g.strokeRect(px + .5, py + .5, cell, cell);
+          if (cell >= 56) {
+            g.fillStyle = '#fff'; g.shadowColor = '#000'; g.shadowBlur = 3;
+            g.fillText(x + ',' + y, px + 4, py + 4); g.shadowBlur = 0;
+          }
+        }
+      }
+      return c;
     }
-  }
-  const zoomClass = () => $('g-map').classList.toggle('zoomed', map.getZoom() >= 2);
-  map.on('zoomend', zoomClass); zoomClass();
-  layer = L.layerGroup().addTo(map);
+  });
+  new Grid({ tileSize: 256, minZoom: 1.5, maxZoom: 5, bounds, zIndex: 5 }).addTo(map);
+  // Repères tous les 10 : visibles même en vue d'ensemble.
+  const grid = L.layerGroup().addTo(map), style = { color: '#fff', weight: 1, opacity: .25, interactive: false };
+  for (let x = Math.ceil(minX / 10) * 10; x <= maxX; x += 10) grid.addLayer(L.polyline([toLL(x, minY - .5), toLL(x, maxY + .5)], x === 0 ? { ...style, opacity: .6 } : style));
+  for (let y = Math.ceil(minY / 10) * 10; y <= maxY; y += 10) grid.addLayer(L.polyline([toLL(minX - .5, y), toLL(maxX + .5, y)], y === 0 ? { ...style, opacity: .6 } : style));
+    layer = L.layerGroup().addTo(map);
   map.on('click', e => {
     if (!running || st.mode !== 'guess' || myGuess(st.i)) return;
     const c = toCell(e.latlng);
