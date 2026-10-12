@@ -2,6 +2,8 @@ import { db, signIn, ref, get, set, update, remove, onValue, onDisconnect, serve
 import { QUESTIONS } from "./questions.js";
 import * as Play from "./play.js";
 import * as Corr from "./correction.js";
+import * as Geo from "./geo.js";
+import { PLACES } from "./geo-places.js";
 
 const MIN_PLAYERS = 1;   // mets 3 quand tu auras fini de tester seul
 const MAX_PLAYERS = 10;  // limite vérifiée par l'application (les règles de la base ne peuvent pas compter les joueurs)
@@ -103,6 +105,12 @@ function render() {
   const ids = Object.keys(players);
   if (meta.phase !== 'lobby') {
     if (!started) { started = true; onDisconnect(playerRef).cancel(); }   // en partie, quitter n'efface plus le joueur
+    if (meta.game === 'geo' || meta.phase === 'geo') {
+      Play.stop(); Corr.stop();
+      Geo.enter({ code, uid, hostUid: meta.hostUid, isHost: meta.hostUid === uid, phase: meta.phase, startAt: meta.startAt });
+      return showScreen(meta.phase === 'results' ? 'georesults' : 'geo');
+    }
+    Geo.stop();
     if (meta.phase === 'questions') {
       Play.enter({ code, uid, isHost: meta.hostUid === uid, startAt: meta.startAt });
       return showScreen('play');
@@ -120,7 +128,19 @@ function render() {
   $('start').disabled = ids.length < MIN_PLAYERS;
 }
 
+const selectedGame = () => document.querySelector('input[name="game"]:checked').value;
+
+async function startGeo() {
+  const n = Math.min(+$('geo-nb').value, PLACES.length);
+  const rounds = shuffle(PLACES.map(p => p.id)).slice(0, n);
+  try {
+    await set(ref(db, `rooms/${code}/geo`), { time: +$('geo-time').value, rounds });
+    await update(ref(db, `rooms/${code}/meta`), { phase: 'geo', game: 'geo', startAt: serverTimestamp() });
+  } catch (e) { console.error(e); showError('Impossible de lancer la partie.'); }
+}
+
 async function startGame() {
+  if (selectedGame() === 'geo') return startGeo();
   const chosen = [...document.querySelectorAll('#cats input:checked')].map(i => i.value);
   if (!chosen.length) { showError('Choisis au moins une catégorie.'); return; }
   const deck = shuffle(QUESTIONS.filter(q => chosen.includes(q.cat))).slice(0, +$('nb').value);
@@ -145,7 +165,7 @@ async function leaveRoom() {
 async function exitRoom(endGame) {
   const c = code;
   unsubs.forEach(u => u()); unsubs = [];
-  Play.stop(); Corr.stop();
+  Play.stop(); Corr.stop(); Geo.stop();
   if (endGame) {   // le chef qui part met fin à la partie : les résultats s'affichent chez les autres
     try { await update(ref(db, `rooms/${c}/meta`), { phase: 'results' }); } catch (e) { console.error(e); }
   }
@@ -169,9 +189,16 @@ $('cats').innerHTML = cats.map(c => `<label class="chk"><input type="checkbox" v
 $('create').onclick = createRoom;
 $('join').onclick = joinRoom;
 $('start').onclick = startGame;
+document.querySelectorAll('input[name="game"]').forEach(r => {
+  r.onchange = () => {
+    const geo = selectedGame() === 'geo';
+    $('quizz-opts').hidden = geo; $('geo-opts').hidden = !geo;
+  };
+});
 $('leave').onclick = leaveRoom;
 document.querySelectorAll('.leave-game').forEach(b => { b.onclick = leaveGame; });
 $('r-home').onclick = () => exitRoom(false);
+$('g-home').onclick = () => exitRoom(false);
 
 signIn().then(user => {
   uid = user.uid;
