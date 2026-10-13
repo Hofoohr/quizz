@@ -167,21 +167,29 @@ def ensemble_cartes():
 
 
 # --------------------------------------------------------------------------- 2. les images
-def nom_image(map_id):
-    return hashlib.sha1(f"carte-{map_id}".encode()).hexdigest()[:10] + ".jpg"
+def nom_image(map_id, sel="carte"):
+    """Nom de fichier opaque (empreinte de l'identifiant). « sel » sépare les jeux d'images : « carte » ne doit pas changer."""
+    return hashlib.sha1(f"{sel}-{map_id}".encode()).hexdigest()[:10] + ".jpg"
 
 
-def preparer_image(map_id):
-    """Télécharge la carte, rogne le filigrane, réduit et enregistre. Idempotent : ne refait pas une image déjà là."""
-    fichier = IMG_DIR / nom_image(map_id)
-    if fichier.exists():
-        return fichier
+def telecharger_carte(map_id):
+    """Télécharge la carte, rogne le filigrane et réduit : renvoie l'image (PIL)."""
     with urllib.request.urlopen(f"{API}/img/maps/0.5/{map_id}.jpg", timeout=60) as r:
         im = Image.open(io.BytesIO(r.read())).convert("RGB")
     im = im.crop((0, 0, im.width, im.height - round(im.height * ROGNE)))
-    im = im.resize((LARGEUR, round(im.height * LARGEUR / im.width)), Image.LANCZOS)
-    im.save(fichier, "JPEG", quality=QUALITE, optimize=True, progressive=True)
     time.sleep(0.15)
+    return im.resize((LARGEUR, round(im.height * LARGEUR / im.width)), Image.LANCZOS)
+
+
+def enregistrer(im, fichier):
+    im.save(fichier, "JPEG", quality=QUALITE, optimize=True, progressive=True)
+
+
+def preparer_image(map_id, dossier=IMG_DIR, sel="carte"):
+    """Télécharge et enregistre une carte. Idempotent : ne refait pas une image déjà là."""
+    fichier = dossier / nom_image(map_id, sel)
+    if not fichier.exists():
+        enregistrer(telecharger_carte(map_id), fichier)
     return fichier
 
 

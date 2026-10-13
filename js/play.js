@@ -1,5 +1,7 @@
 import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockReady } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
+import { creerMonde } from "./monde.js";
+import { lireCoord } from "./carte.js";
 
 const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
 const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
@@ -16,6 +18,20 @@ let skips = {}, offSkips = null;
 let timer = null, saveTimer = null, cur = null, lockedFor = null, lastSaved = {}, finishing = false;
 
 // Image d'une question « carte » : elle est dans la banque locale (l'id publié suffit à la retrouver), pas dans la base.
+const bankOf = q => QUESTIONS.find(x => x.id === q.id) || {};
+const isRank = q => !!bankOf(q).classement;
+// Question « classement » : on répond en plaçant un repère sur la carte du monde (enregistré comme « x, y » dans le champ 0).
+let monde = null, pin = null;
+function setPin(x, y) {
+  if (cur === null || lockedFor === cur || !isRank(list[cur])) return;
+  pin = { x, y };
+  drawPin();
+  onType();
+}
+function drawPin() {
+  if (monde) monde.afficher(pin ? [{ ...pin, cls: 'me', label: '📍' }] : []);
+  $('p-pos').textContent = pin ? `Ton repère : ${pin.x}, ${pin.y}` : 'Pas encore de repère : clique sur la carte.';
+}
 const imageOf = q => (QUESTIONS.find(x => x.id === q.id) || {}).img || null;
 
 function view(name) {
@@ -24,6 +40,7 @@ function view(name) {
 
 // Réponse saisie : un texte, ou un objet {numéro du champ: texte} pour une question à plusieurs champs (null si vide).
 function readValue(i) {
+  if (isRank(list[i])) return pin ? { 0: `${pin.x}, ${pin.y}` } : null;
   if (!fieldsOf(list[i])) return $('p-answer').value.slice(0, 200) || null;
   const o = {};
   inputs().forEach((el, k) => { const v = el.value.slice(0, 200); if (v.trim()) o[k] = v; });
@@ -59,20 +76,27 @@ function openQuestion(i) {
   const src = imageOf(q), img = $('p-img');
   img.hidden = !src;
   if (src) img.src = src; else img.removeAttribute('src');
-  const fields = fieldsOf(q);
+  const fields = fieldsOf(q), rank = isRank(q);
   const input = $('p-answer');
-  input.hidden = !!fields; $('p-fields').hidden = !fields;
+  input.hidden = !!fields; $('p-fields').hidden = !fields || rank;
+  $('p-mapbox').hidden = !rank;
+  pin = null;
+  if (rank) {
+    if (!monde) monde = creerMonde($('p-map'), { surClic: setPin, surSurvol: (x, y) => { $('p-hover').textContent = `x ${x}, y ${y}`; } });
+    monde.invalider(); monde.cadrer([]); drawPin();
+  }
   input.value = ''; input.disabled = false;
   if (fields) {
     $('p-fields').innerHTML = fields.map((label, k) =>
       `<label class="field">${esc(label)}<input data-k="${k}" maxlength="200" autocomplete="off"></label>`).join('');
   }
-  (fields ? inputs()[0] : input).focus();
+  if (!rank) (fields ? inputs()[0] : input).focus();
   // Reprise après un rechargement de page : on récupère la réponse déjà enregistrée.
   get(ref(db, `rooms/${ctx.code}/answers/${i}/${ctx.uid}`)).then(s => {
     if (!s.exists() || cur !== i) return;
     const v = s.val();
-    if (fields) inputs().forEach((el, k) => { if (!el.value && typeof v === 'object' && v[k] != null) el.value = v[k]; });
+    if (rank) { const c = v && typeof v === 'object' ? lireCoord(v[0]) : null; if (c && !pin) { pin = { x: c[0], y: c[1] }; drawPin(); } }
+    else if (fields) inputs().forEach((el, k) => { if (!el.value && typeof v === 'object' && v[k] != null) el.value = v[k]; });
     else if (!input.value && typeof v === 'string') input.value = v;
     lastSaved[i] = JSON.stringify(readValue(i));
   }).catch(() => {});

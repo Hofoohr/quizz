@@ -1,0 +1,11 @@
+{
+  "database": { "rules": "database.rules.json" },
+  "hosting": {
+    "site": "dofusquizz",
+    "public": ".",
+    "ignore": ["firebase.json", ".firebaserc", ".gitignore", "database.rules.json", "tools/**", "**/.*", "**/node_modules/**"],
+    "headers": [
+      { "source": "img/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }] }
+    ]
+  }
+}
