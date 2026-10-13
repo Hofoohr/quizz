@@ -80,12 +80,12 @@ function renderCorrection() {
       const pile = r.d === 0;
       const medal = r.rang === null ? '–' : ['🥇', '🥈', '🥉'][r.rang - 1] || r.rang + '.';
       return `<li class="row rank ${r.points > 0 ? 'ok' : 'ko'}${pile ? ' pile' : ''}"><div class="who"><b>${medal} ${esc(players[id].name)}${id === ctx.uid ? ' <small>(toi)</small>' : ''}</b><span>+${String(r.points).replace('.', ',')} pt${r.points >= 2 ? 's' : ''}</span></div>
-        <div class="ans">${a ? esc(a) : '<i>(pas de réponse)</i>'}<small class="dist">${pile ? '🎯 Pile dessus !' : esc(texteDistance(a, bk.a[bk.coord]) || '')}</small></div></li>`;
+        <div class="ans">${a ? esc(a) : '<i>(pas de réponse)</i>'}<small class="dist">${pile ? '🎯 Perfect !' : esc(texteDistance(a, bk.a[bk.coord]) || '')}</small></div></li>`;
     }).join('');
     $('c-mapbox').hidden = false;
     const piles = ids.filter(id => res[id].d === 0).map(id => players[id].name);
     $('c-pile').hidden = !piles.length;
-    $('c-pile').textContent = '🎯 Pile dessus : ' + piles.join(', ');
+    $('c-pile').textContent = '🎯 Perfect : ' + piles.join(', ');
     if (!monde) monde = creerMonde($('c-map'));
     const cible = lireCoord(bk.a[bk.coord]);
     const pins = ids.map(id => { const c = lireCoord(answers[id] && typeof answers[id] === 'object' ? answers[id][bk.coord] : answers[id]);
