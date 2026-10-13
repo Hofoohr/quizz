@@ -206,10 +206,6 @@ $('cats').innerHTML = cats.map(c => `<label class="chk"><input type="checkbox" v
 $('create').onclick = createRoom;
 $('join').onclick = joinRoom;
 $('start').onclick = startGame;
-// « No move » : 15 s après le 1er guess, tant que le chef n'a pas choisi lui-même un autre délai.
-let graceTouched = false;
-$('geo-grace').onchange = () => { graceTouched = true; };
-$('geo-nomove').onchange = () => { if (!graceTouched) $('geo-grace').value = $('geo-nomove').checked ? '15' : '30'; };
 document.querySelectorAll('input[name="game"]').forEach(r => {
   r.onchange = () => {
     const geo = selectedGame() === 'geo';

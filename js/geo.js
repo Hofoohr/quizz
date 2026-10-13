@@ -364,7 +364,7 @@ export async function enter(c) {
     const cfgVal = (await get(path('geo'))).val();
     if (!cfgVal) { running = false; return; }
     cfg = {
-      max: cfgVal.max || 300, grace: cfgVal.grace || 30, noMove: !!cfgVal.nomove,
+      max: cfgVal.max || 120, grace: cfgVal.grace || 15, noMove: !!cfgVal.nomove,
       rounds: toList(cfgVal.rounds).map(s => { const [x, y] = String(s).split(',').map(Number); return { x, y }; }).filter(r => at_(r.x, r.y))
     };
     if (!cfg.rounds.length) { running = false; return; }
