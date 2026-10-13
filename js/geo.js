@@ -5,7 +5,7 @@ import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockRe
 import { MAPS } from "./geo-maps.js";
 
 const COUNTDOWN_MS = 5000;   // compte à rebours avant la première manche
-const REVEAL_MS = 5000;      // temps d'affichage de la solution après chaque manche
+const REVEAL_MS = 8000;      // temps d'affichage de la solution après chaque manche
 const END_GRACE_MS = 1500;   // délai avant la fin de partie (laisse arriver les dernières écritures)
 const MAX_POINTS = 1000;
 const POINTS_SCALE = 15;     // 1000 pts sur la bonne carte, ~370 pts à 15 cartes de distance
