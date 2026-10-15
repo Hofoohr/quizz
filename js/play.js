@@ -14,7 +14,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 const fieldsOf = q => (q && q.champs ? Object.values(q.champs) : null);
 const inputs = () => [...document.querySelectorAll('#p-fields input')];
 let running = false, ctx = null, list = [], sched = [];
-let skips = {}, offSkips = null;
+let skips = {}, offSkips = null, ready = {}, offReady = null, offPlayers = null, players = {};
 let timer = null, saveTimer = null, cur = null, lockedFor = null, lastSaved = {}, finishing = false;
 
 // Image d'une question « carte » : elle est dans la banque locale (l'id publié suffit à la retrouver), pas dans la base.
@@ -69,6 +69,7 @@ function openQuestion(i) {
   lockQuestion();   // au cas où l'onglet aurait été ralenti : on enregistre la question précédente
   cur = i; lockedFor = null;
   const q = list[i];
+  renderReady();
   $('p-progress').textContent = `Question ${i + 1} / ${list.length}`;
   $('p-cat').textContent = q.cat;
   $('p-pts').textContent = q.pts + ' pt' + (q.pts > 1 ? 's' : '');
@@ -126,6 +127,26 @@ function buildSched() {
   });
 }
 
+// « Prêt » : un participant prévient le chef qu'il a fini ; le chef voit qui est prêt et le bouton « Passer » s'allume quand tous le sont.
+function renderReady() {
+  if (cur === null || !ctx) return;
+  const mine = !!(ready[cur] && ready[cur][ctx.uid]);
+  const others = Object.keys(players).filter(id => id !== ctx.hostUid);
+  const done = others.filter(id => ready[cur] && ready[cur][id]);
+  const all = others.length > 0 && done.length === others.length;
+  $('p-ready').hidden = ctx.isHost;
+  $('p-ready').classList.toggle('on', mine);
+  $('p-ready').textContent = mine ? "✅ Tu as prévenu le chef (annuler)" : "✋ J'ai fini : prévenir le chef";
+  $('p-readyinfo').hidden = !ctx.isHost || !others.length;
+  $('p-readyinfo').textContent = `✋ Prêts : ${done.length} / ${others.length}` + (all ? ' — tout le monde est prêt !' : '');
+  $('p-skip').classList.toggle('go', ctx.isHost && all);
+}
+$('p-ready').onclick = () => {
+  if (cur === null || !ctx || ctx.isHost) return;
+  const on = !(ready[cur] && ready[cur][ctx.uid]);
+  set(ref(db, `rooms/${ctx.code}/ready/${cur}/${ctx.uid}`), on ? true : null).catch(console.error);
+};
+
 // Le chef passe la question en cours : elle se termine maintenant pour tout le monde.
 function skipQuestion() {
   if (!ctx || !ctx.isHost || cur === null || skips[cur] != null) return;
@@ -176,6 +197,8 @@ export async function enter(c) {
     if (!list.length) { running = false; return; }
     list.forEach(q => { const src = imageOf(q); if (src) new Image().src = src; });   // on charge les cartes à l'avance
     offSkips = onValue(ref(db, `rooms/${ctx.code}/skips`), s => { skips = s.val() || {}; });
+    offReady = onValue(ref(db, `rooms/${ctx.code}/ready`), s => { ready = s.val() || {}; renderReady(); });
+    offPlayers = onValue(ref(db, `rooms/${ctx.code}/players`), s => { players = s.val() || {}; renderReady(); });
     buildSched();
     timer = setInterval(tick, 200);
     tick();
@@ -185,6 +208,9 @@ export async function enter(c) {
 export function stop() {
   running = false;
   if (offSkips) { offSkips(); offSkips = null; }
+  if (offReady) { offReady(); offReady = null; }
+  if (offPlayers) { offPlayers(); offPlayers = null; }
+  ready = {}; players = {};
   clearInterval(timer);
   clearTimeout(saveTimer);
 }

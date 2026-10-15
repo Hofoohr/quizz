@@ -68,10 +68,12 @@
       <input id="p-answer" placeholder="Ta réponse…" autocomplete="off" maxlength="200">
       <div id="p-fields" hidden></div>
       <div id="p-mapbox" hidden>
-        <div class="zoombar"><small id="p-maphint">Clique sur la carte du monde pour placer ton repère (x vers l'est, y vers le sud).</small><small id="p-hover"></small></div>
+        <div class="zoombar"><small id="p-maphint">Clique sur la carte du monde pour placer ton repère (x vers l'est, y vers le sud). <b>Le plus proche gagne les points !</b></small><small id="p-hover"></small></div>
         <div id="p-map" class="monde"></div>
         <p id="p-pos" class="hint"></p>
       </div>
+      <button id="p-ready" class="btn ghost" hidden>✋ J'ai fini : prévenir le chef</button>
+      <p id="p-readyinfo" class="hint" hidden></p>
       <button id="p-skip" class="btn ghost" hidden>Passer la question</button>
       <p class="hint">Ta réponse est enregistrée automatiquement : ce qui est écrit quand le temps arrive à 0 est retenu.</p>
     </div>
@@ -171,6 +173,14 @@
   </section>
 
 </main>
+<div id="chat" hidden>
+  <div id="chat-panel" hidden>
+    <div class="chat-top"><b>💬 Chat du salon</b><button id="chat-close" class="chat-x" aria-label="Fermer le chat">✕</button></div>
+    <div id="chat-msgs"></div>
+    <form id="chat-form"><input id="chat-text" maxlength="200" placeholder="Écris un message…" autocomplete="off"><button class="btn">Envoyer</button></form>
+  </div>
+  <button id="chat-btn" aria-label="Ouvrir le chat">💬<span id="chat-badge" hidden></span></button>
+</div>
 <div id="error" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script type="module" src="js/lobby.js"></script>

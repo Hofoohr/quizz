@@ -70,7 +70,7 @@ def main():
             rejets.add(mid)
     REJETS.write_text(json.dumps(sorted(rejets)))
     gardees = [x for x in cands if (DOSSIER / c.nom_image(x[2], SEL)).exists()][:NOMBRE]   # ordre du tirage, stable
-    items = [{"q": "GeoGuessr : où se trouve cette carte ?", "champs": [["Coordonnées (x, y)", f"{x}, {y}"]],
+    items = [{"q": "GeoGuessr : où se trouve cette carte ? (le plus proche gagne les points)", "champs": [["Coordonnées (x, y)", f"{x}, {y}"]],
               "pts": PTS, "temps": TEMPS, "img": f"img/geo/{c.nom_image(mid, SEL)}", "coord": 0, "classement": True}
              for x, y, mid in gardees]
     lignes = ["    " + json.dumps(i, ensure_ascii=False) + "," for i in items]

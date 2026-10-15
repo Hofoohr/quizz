@@ -73,6 +73,32 @@
           }
         },
 
+        // « Prêt » : un participant prévient le chef qu'il a fini la question (ready/numéro de question/uid = true).
+        "ready": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+          "$i": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/meta/phase').val() === 'questions' && root.child('rooms/' + $code + '/players/' + auth.uid).exists()",
+              ".validate": "newData.isBoolean()"
+            }
+          }
+        },
+
+        // Chat du salon : chaque message est écrit une seule fois par son auteur.
+        "chat": {
+          ".read": "auth != null",
+          "$id": {
+            ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid && root.child('rooms/' + $code + '/players/' + auth.uid).exists()",
+            ".validate": "newData.hasChildren(['uid', 'name', 'text', 'at'])",
+            "uid": { ".validate": "newData.isString()" },
+            "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" },
+            "text": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200" },
+            "at": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+
         "expected": {
           ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
           "$i": {

@@ -4,6 +4,7 @@ import * as Play from "./play.js";
 import * as Corr from "./correction.js";
 import { melange, composer } from "./tirage.js";
 import * as Geo from "./geo.js";
+import * as Chat from "./chat.js";
 
 const MIN_PLAYERS = 1;   // mets 3 quand tu auras fini de tester seul
 const MAX_PLAYERS = 10;  // limite vérifiée par l'application (les règles de la base ne peuvent pas compter les joueurs)
@@ -85,6 +86,7 @@ function enterRoom() {
   showScreen('lobby');
   unsubs.push(onValue(ref(db, `rooms/${code}/meta`), s => { meta = s.val(); render(); }));
   unsubs.push(onValue(ref(db, `rooms/${code}/players`), s => { players = s.val() || {}; render(); }));
+  Chat.start({ code, uid, name: () => (players[uid] && players[uid].name) || '?' });
 }
 
 // Après un rechargement de page, on revient dans la partie en cours.
@@ -115,7 +117,7 @@ function render() {
     }
     Geo.stop();
     if (meta.phase === 'questions') {
-      Play.enter({ code, uid, isHost: meta.hostUid === uid, startAt: meta.startAt });
+      Play.enter({ code, uid, hostUid: meta.hostUid, isHost: meta.hostUid === uid, startAt: meta.startAt });
       return showScreen('play');
     }
     Play.stop();
@@ -171,7 +173,7 @@ async function startGame() {
 }
 
 async function leaveRoom() {
-  unsubs.forEach(u => u()); unsubs = [];
+  unsubs.forEach(u => u()); unsubs = []; Chat.stop();
   try { onDisconnect(playerRef).cancel(); await remove(playerRef); } catch (e) {}
   store('room', null);
   code = null; meta = null; players = {}; playerRef = null; started = false;
@@ -181,7 +183,7 @@ async function leaveRoom() {
 // Quitter une partie en cours (avec confirmation) pour pouvoir en lancer une nouvelle.
 async function exitRoom(endGame) {
   const c = code;
-  unsubs.forEach(u => u()); unsubs = [];
+  unsubs.forEach(u => u()); unsubs = []; Chat.stop();
   Play.stop(); Corr.stop(); Geo.stop();
   if (endGame) {   // le chef qui part met fin à la partie : les résultats s'affichent chez les autres
     try { await update(ref(db, `rooms/${c}/meta`), { phase: 'results' }); } catch (e) { console.error(e); }
@@ -218,7 +220,7 @@ document.querySelectorAll('.leave-game').forEach(b => { b.onclick = leaveGame; }
 async function replay() {
   try {
     await update(ref(db, `rooms/${code}`), {
-      questions: null, answers: null, skips: null, expected: null, correction: null, verdicts: null, geo: null, guesses: null,
+      questions: null, answers: null, skips: null, ready: null, expected: null, correction: null, verdicts: null, geo: null, guesses: null,
       'meta/phase': 'lobby', 'meta/game': null, 'meta/startAt': null
     });
   } catch (e) { console.error(e); showError('Impossible de relancer la partie.'); }
