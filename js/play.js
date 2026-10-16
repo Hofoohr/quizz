@@ -1,25 +1,59 @@
-import { db, ref, get, set, update, serverNow, clockReady } from "./firebase.js";
+import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockReady } from "./firebase.js";
+import { QUESTIONS } from "./questions.js";
+import { creerMonde } from "./monde.js";
+import { lireCoord } from "./carte.js";
 
-const COUNTDOWN_MS = 5000;   // compte à rebours avant la première question
-const PAUSE_MS = 3000;       // pause entre deux questions
+const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
+const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
 const GRACE_MS = 2000;       // délai avant la correction (laisse arriver les dernières réponses)
 const SAVE_DELAY_MS = 300;   // délai d'enregistrement pendant la frappe
 
 const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+// Intitulés des champs d'une question à plusieurs champs (null pour une question simple).
+const fieldsOf = q => (q && q.champs ? Object.values(q.champs) : null);
+const inputs = () => [...document.querySelectorAll('#p-fields input')];
 let running = false, ctx = null, list = [], sched = [];
+let skips = {}, offSkips = null, ready = {}, offReady = null, offPlayers = null, players = {};
 let timer = null, saveTimer = null, cur = null, lockedFor = null, lastSaved = {}, finishing = false;
+
+// Image d'une question « carte » : elle est dans la banque locale (l'id publié suffit à la retrouver), pas dans la base.
+const bankOf = q => QUESTIONS.find(x => x.id === q.id) || {};
+const isRank = q => !!bankOf(q).classement;
+// Question « classement » : on répond en plaçant un repère sur la carte du monde (enregistré comme « x, y » dans le champ 0).
+let monde = null, pin = null;
+function setPin(x, y) {
+  if (cur === null || lockedFor === cur || !isRank(list[cur])) return;
+  pin = { x, y };
+  drawPin();
+  onType();
+}
+function drawPin() {
+  if (monde) monde.afficher(pin ? [{ ...pin, cls: 'me', label: '📍' }] : []);
+  $('p-pos').textContent = pin ? `Ton repère : ${pin.x}, ${pin.y}` : 'Pas encore de repère : clique sur la carte.';
+}
+const imageOf = q => (QUESTIONS.find(x => x.id === q.id) || {}).img || null;
 
 function view(name) {
   ['live', 'wait', 'end'].forEach(v => { $('p-' + v).hidden = v !== name; });
 }
 
+// Réponse saisie : un texte, ou un objet {numéro du champ: texte} pour une question à plusieurs champs (null si vide).
+function readValue(i) {
+  if (isRank(list[i])) return pin ? { 0: `${pin.x}, ${pin.y}` } : null;
+  if (!fieldsOf(list[i])) return $('p-answer').value.slice(0, 200) || null;
+  const o = {};
+  inputs().forEach((el, k) => { const v = el.value.slice(0, 200); if (v.trim()) o[k] = v; });
+  return Object.keys(o).length ? o : null;
+}
+
 // Enregistre la réponse en cours de saisie dans la base.
 function saveNow(i) {
   clearTimeout(saveTimer);
-  const v = $('p-answer').value.slice(0, 200);
-  if (v === (lastSaved[i] ?? '')) return;
-  lastSaved[i] = v;
-  set(ref(db, `rooms/${ctx.code}/answers/${i}/${ctx.uid}`), v === '' ? null : v).catch(console.error);
+  const v = readValue(i), key = JSON.stringify(v);
+  if (key === (lastSaved[i] ?? 'null')) return;
+  lastSaved[i] = key;
+  set(ref(db, `rooms/${ctx.code}/answers/${i}/${ctx.uid}`), v).catch(console.error);
 }
 
 // Fin du temps : on bloque la saisie et on envoie ce qui est écrit.
@@ -27,6 +61,7 @@ function lockQuestion() {
   if (cur === null || lockedFor === cur) return;
   lockedFor = cur;
   $('p-answer').disabled = true;
+  inputs().forEach(el => { el.disabled = true; });
   saveNow(cur);
 }
 
@@ -34,15 +69,37 @@ function openQuestion(i) {
   lockQuestion();   // au cas où l'onglet aurait été ralenti : on enregistre la question précédente
   cur = i; lockedFor = null;
   const q = list[i];
+  renderReady();
   $('p-progress').textContent = `Question ${i + 1} / ${list.length}`;
   $('p-cat').textContent = q.cat;
   $('p-pts').textContent = q.pts + ' pt' + (q.pts > 1 ? 's' : '');
   $('p-text').textContent = q.q;
+  const src = imageOf(q), img = $('p-img');
+  img.hidden = !src;
+  if (src) img.src = src; else img.removeAttribute('src');
+  const fields = fieldsOf(q), rank = isRank(q);
   const input = $('p-answer');
-  input.value = ''; input.disabled = false; input.focus();
+  input.hidden = !!fields; $('p-fields').hidden = !fields || rank;
+  $('p-mapbox').hidden = !rank;
+  pin = null;
+  if (rank) {
+    if (!monde) monde = creerMonde($('p-map'), { surClic: setPin, surSurvol: (x, y) => { $('p-hover').textContent = `x ${x}, y ${y}`; } });
+    monde.invalider(); monde.cadrer([]); drawPin();
+  }
+  input.value = ''; input.disabled = false;
+  if (fields) {
+    $('p-fields').innerHTML = fields.map((label, k) =>
+      `<label class="field">${esc(label)}<input data-k="${k}" maxlength="200" autocomplete="off"></label>`).join('');
+  }
+  if (!rank) (fields ? inputs()[0] : input).focus();
   // Reprise après un rechargement de page : on récupère la réponse déjà enregistrée.
   get(ref(db, `rooms/${ctx.code}/answers/${i}/${ctx.uid}`)).then(s => {
-    if (s.exists() && cur === i && !input.value) { input.value = s.val(); lastSaved[i] = s.val(); }
+    if (!s.exists() || cur !== i) return;
+    const v = s.val();
+    if (rank) { const c = v && typeof v === 'object' ? lireCoord(v[0]) : null; if (c && !pin) { pin = { x: c[0], y: c[1] }; drawPin(); } }
+    else if (fields) inputs().forEach((el, k) => { if (!el.value && typeof v === 'object' && v[k] != null) el.value = v[k]; });
+    else if (!input.value && typeof v === 'string') input.value = v;
+    lastSaved[i] = JSON.stringify(readValue(i));
   }).catch(() => {});
 }
 
@@ -58,8 +115,48 @@ function finish(now) {
   }
 }
 
+// Calendrier des questions. Quand le chef passe une question, elle se termine à l'heure enregistrée dans « skips ».
+function buildSched() {
+  let t = ctx.startAt + COUNTDOWN_MS;
+  sched = list.map((q, i) => {
+    const start = t;
+    let end = start + q.temps * 1000;
+    if (skips[i] != null) end = Math.max(start, Math.min(end, skips[i]));
+    t = end + PAUSE_MS;
+    return { start, end };
+  });
+}
+
+// « Prêt » : un participant prévient le chef qu'il a fini ; le chef voit qui est prêt et le bouton « Passer » s'allume quand tous le sont.
+function renderReady() {
+  if (cur === null || !ctx) return;
+  const mine = !!(ready[cur] && ready[cur][ctx.uid]);
+  const others = Object.keys(players).filter(id => id !== ctx.hostUid);
+  const done = others.filter(id => ready[cur] && ready[cur][id]);
+  const all = others.length > 0 && done.length === others.length;
+  $('p-ready').hidden = ctx.isHost;
+  $('p-ready').classList.toggle('on', mine);
+  $('p-ready').textContent = mine ? "✅ Prêt à passer à la question suivante (annuler)" : "✋ Prêt à passer à la question suivante";
+  $('p-readyinfo').hidden = !ctx.isHost || !others.length;
+  $('p-readyinfo').textContent = `✋ Prêts : ${done.length} / ${others.length}` + (all ? ' — tout le monde est prêt !' : '');
+  $('p-skip').classList.toggle('go', ctx.isHost && all);
+}
+$('p-ready').onclick = () => {
+  if (cur === null || !ctx || ctx.isHost) return;
+  const on = !(ready[cur] && ready[cur][ctx.uid]);
+  set(ref(db, `rooms/${ctx.code}/ready/${cur}/${ctx.uid}`), on ? true : null).catch(console.error);
+};
+
+// Le chef passe la question en cours : elle se termine maintenant pour tout le monde.
+function skipQuestion() {
+  if (!ctx || !ctx.isHost || cur === null || skips[cur] != null) return;
+  $('p-skip').disabled = true;
+  set(ref(db, `rooms/${ctx.code}/skips/${cur}`), serverTimestamp()).catch(e => { console.error(e); $('p-skip').disabled = false; });
+}
+
 // Tous les navigateurs déduisent la question en cours de l'heure du serveur.
 function tick() {
+  buildSched();
   const now = serverNow();
   const i = sched.findIndex(s => now < s.end);
   if (i === -1) return finish(now);
@@ -72,29 +169,37 @@ function tick() {
   }
   view('live');
   if (cur !== i) openQuestion(i);
+  $('p-skip').hidden = !ctx.isHost;
+  $('p-skip').disabled = skips[i] != null;
   const left = (s.end - now) / 1000;
   $('p-secs').textContent = Math.ceil(left) + ' s';
   $('p-fill').style.width = (left / ((s.end - s.start) / 1000) * 100) + '%';
 }
 
-$('p-answer').addEventListener('input', () => {
+function onType() {
   if (cur === null || lockedFor === cur) return;
   clearTimeout(saveTimer);
   const i = cur;
   saveTimer = setTimeout(() => saveNow(i), SAVE_DELAY_MS);
-});
+}
+$('p-skip').onclick = skipQuestion;
+$('p-answer').addEventListener('input', onType);
+$('p-fields').addEventListener('input', onType);
 
 export async function enter(c) {
   if (running) return;
-  running = true; ctx = c; cur = null; lockedFor = null; lastSaved = {}; finishing = false;
+  running = true; ctx = c; cur = null; lockedFor = null; lastSaved = {}; finishing = false; skips = {};
   try {
     await clockReady;
     const snap = await get(ref(db, `rooms/${ctx.code}/questions`));
     const v = snap.val() || [];
     list = Array.isArray(v) ? v : Object.values(v);
     if (!list.length) { running = false; return; }
-    let t = ctx.startAt + COUNTDOWN_MS;
-    sched = list.map(q => { const s = { start: t, end: t + q.temps * 1000 }; t = s.end + PAUSE_MS; return s; });
+    list.forEach(q => { const src = imageOf(q); if (src) new Image().src = src; });   // on charge les cartes à l'avance
+    offSkips = onValue(ref(db, `rooms/${ctx.code}/skips`), s => { skips = s.val() || {}; });
+    offReady = onValue(ref(db, `rooms/${ctx.code}/ready`), s => { ready = s.val() || {}; renderReady(); });
+    offPlayers = onValue(ref(db, `rooms/${ctx.code}/players`), s => { players = s.val() || {}; renderReady(); });
+    buildSched();
     timer = setInterval(tick, 200);
     tick();
   } catch (e) { console.error(e); running = false; }
@@ -102,6 +207,10 @@ export async function enter(c) {
 
 export function stop() {
   running = false;
+  if (offSkips) { offSkips(); offSkips = null; }
+  if (offReady) { offReady(); offReady = null; }
+  if (offPlayers) { offPlayers(); offPlayers = null; }
+  ready = {}; players = {};
   clearInterval(timer);
   clearTimeout(saveTimer);
 }
