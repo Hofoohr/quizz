@@ -5,6 +5,7 @@
     "public": ".",
     "ignore": ["firebase.json", ".firebaserc", ".gitignore", "database.rules.json", "tools/**", "**/.*", "**/node_modules/**"],
     "headers": [
+      { "source": "**/*.@(js|css|html)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
       { "source": "img/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }] }
     ]
   }
