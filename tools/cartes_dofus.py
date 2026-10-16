@@ -209,7 +209,7 @@ def main():
         zone = " ".join(zones[c["sous_zone"]]["name"]["fr"].split()) if c["sous_zone"] in zones else INCONNU
         items.append({
             "q": "Où se trouve cette carte ?",
-            "champs": [["Sous-zone", zone], ["Point d'intérêt", poi], ["Coordonnées (x, y)", f"{c['x']}, {c['y']}"]],
+            "champs": [["Sous-zone", zone], ["Point d'intérêt", poi], ["Coordonnées (x, y) — le plus proche gagne les points", f"{c['x']}, {c['y']}"]],
             "pts": PTS, "temps": TEMPS, "img": f"img/cartes/{nom_image(c['id'])}", "coord": 2,
         })
     lignes = ["    " + json.dumps(i, ensure_ascii=False) + "," for i in items]
