@@ -136,7 +136,7 @@ function renderReady() {
   const all = others.length > 0 && done.length === others.length;
   $('p-ready').hidden = ctx.isHost;
   $('p-ready').classList.toggle('on', mine);
-  $('p-ready').textContent = mine ? "✅ Tu as prévenu le chef (annuler)" : "✋ J'ai fini : prévenir le chef";
+  $('p-ready').textContent = mine ? "✅ Prêt à passer à la question suivante (annuler)" : "✋ Prêt à passer à la question suivante";
   $('p-readyinfo').hidden = !ctx.isHost || !others.length;
   $('p-readyinfo').textContent = `✋ Prêts : ${done.length} / ${others.length}` + (all ? ' — tout le monde est prêt !' : '');
   $('p-skip').classList.toggle('go', ctx.isHost && all);
