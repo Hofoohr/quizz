@@ -220,10 +220,11 @@ document.querySelectorAll('.leave-game').forEach(b => { b.onclick = leaveGame; }
 async function replay() {
   try {
     await update(ref(db, `rooms/${code}`), {
-      questions: null, answers: null, skips: null, ready: null, expected: null, correction: null, verdicts: null, geo: null, guesses: null,
+      questions: null, answers: null, skips: null, expected: null, correction: null, verdicts: null, geo: null, guesses: null,
       'meta/phase': 'lobby', 'meta/game': null, 'meta/startAt': null
     });
-  } catch (e) { console.error(e); showError('Impossible de relancer la partie.'); }
+  } catch (e) { console.error(e); showError('Impossible de relancer la partie.'); return; }
+  remove(ref(db, `rooms/${code}/ready`)).catch(() => {});   // à part : ne bloque pas le retour au salon si les règles n'ont pas été mises à jour
 }
 $('r-home').onclick = replay;
 $('gr-home').onclick = replay;
