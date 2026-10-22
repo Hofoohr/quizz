@@ -80,10 +80,10 @@ fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 1.2rem}
 #chat-form input{margin:0;flex:1;min-width:0} #chat-form .btn{margin:0;padding:.4rem .8rem;width:auto}
 #p-ready.on{border-color:var(--good);color:var(--good)}
 #p-skip.go{background:var(--good);color:#04210f;border-color:var(--good)}
-.conf{border:2px solid var(--c);border-radius:8px;padding:.6rem .8rem;margin:.5rem 0;background:rgba(0,0,0,.18)}
+.conf{--c:var(--accent);border:2px solid var(--c);border-radius:8px;padding:.6rem .8rem;margin:.5rem 0;background:rgba(0,0,0,.18)}
 .conf .pv{position:relative;margin-bottom:.5rem}
 .conf .pv i{display:block;height:8px;margin-top:.3rem;border-radius:4px;background:var(--c)}
-.conf .rot{margin:0;font-size:1.15rem;font-weight:700;color:var(--c);filter:brightness(1.35)}
+.conf .rot{margin:0;font-size:1.15rem;font-weight:700}
 .scene{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#7d8a52;margin:.5rem 0;cursor:pointer}
 .row.multi{display:block}
 .row.multi .who{display:flex;justify-content:space-between;margin-bottom:.5rem}

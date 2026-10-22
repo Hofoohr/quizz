@@ -81,7 +81,7 @@ function renderCorrection() {
     const bk = bankOf(q), sc = bk.scene, ok = justes(index), v = caseAViser(sc), cl = COULEURS[sc.conf];
     $('c-mapbox').hidden = true;
     $('c-conf').innerHTML = infosScene(sc);
-    $('c-expected').innerHTML = `<span class="exp-line">Vie ${sc.pv} % (${PLAGE_VIE[sc.conf]}) → confusion ${cl.nom} : rotation de ${esc(cl.angle)} autour de l'Enutrof</span>`;
+    $('c-expected').innerHTML = `<span class="exp-line">Vie ${sc.pv} % (${PLAGE_VIE[sc.conf]}) → rotation de ${esc(cl.angle)} autour de l'Enutrof</span>`;
     $('c-scenetxt').textContent = 'La case verte est la bonne case à cliquer : le sort y est dévié sur le Comte Harebourg (traits pointillés).';
     const marques = [], vus = {};
     order().forEach(id => {

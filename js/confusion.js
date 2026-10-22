@@ -1,6 +1,7 @@
 // Mini-jeu « Confusion horaire » (Comte Harebourg) : une Enutrof (le joueur) lance un sort sur le Comte, mais la case visée est tournée
-// autour du lanceur selon la couleur de sa confusion. Il faut cliquer la case qui, une fois tournée, tombe sur le Comte.
-//   rouge : rotation de 90° dans le sens horaire ; bleue : 180° ; verte : 270° dans le sens horaire (= 90° anti-horaire).
+// autour du lanceur selon sa confusion (qui dépend de sa vie). Il faut cliquer la case qui, une fois tournée, tombe sur le Comte.
+// Les trois rotations (noms internes « rouge », « bleue », « verte » : aucune couleur n'est montrée aux joueurs) :
+//   100 à 75 % de vie : 90° dans le sens horaire ; 75 à 25 % : 180° ; 25 à 0 % : 270° dans le sens horaire (= 90° anti-horaire).
 // Repère : x vers le bas-droite de l'écran, y vers le bas-gauche (comme les cases de Dofus vues en isométrique).
 
 export const COULEURS = {
@@ -17,7 +18,7 @@ export const AFFICHAGE = {
 };
 export const PLAGE_VIE = { rouge: '100 % à 75 %', bleue: '75 % à 25 %', verte: '25 % à 0 %' };
 // Encadré « vie + confusion » (une seule écriture de la confusion) affiché au-dessus de la scène (HTML).
-export const infosScene = scene => `<div class="conf" style="--c:${COULEURS[scene.conf].hex}">
+export const infosScene = scene => `<div class="conf">
   <div class="pv"><span>❤️ Vie de l'Enutrof : <b>${scene.pv} %</b></span><i style="width:${scene.pv}%"></i></div>
   <p class="rot">${AFFICHAGE[scene.conf][scene.aff % AFFICHAGE[scene.conf].length]}</p></div>`;
 
@@ -40,7 +41,7 @@ export const lireCase = t => { const m = /^\s*(-?\d+)\s*,\s*(-?\d+)\s*$/.exec(St
 export const estJuste = (scene, t) => { const c = lireCase(t), v = caseAViser(scene); return !!c && c[0] === v[0] && c[1] === v[1]; };
 
 // --- Dessin ---
-const W = 64, H = 32, HAUT = 70;   // largeur / hauteur d'une case, marge en haut pour les personnages
+const W = 52, H = 26, HAUT = 80;   // largeur / hauteur d'une case, marge en haut pour les personnages
 const IMG = {};
 const charge = src => IMG[src] || (IMG[src] = Object.assign(new Image(), { src }));
 
@@ -75,7 +76,7 @@ export function creerScene(canvas, scene, opts = {}) {
       losange(x, y); ctx.fillStyle = (x + y) % 2 ? '#c9b98f' : '#d8caa3'; ctx.fill();
       ctx.strokeStyle = 'rgba(70,55,30,.35)'; ctx.lineWidth = 1; ctx.stroke();
     }
-    const col = COULEURS[scene.conf].hex;
+    const col = '#7c5cff';   // anneau du lanceur
     if (etat.solution) {   // correction : bonne case, et trajet du sort vers le Comte
       const [sx, sy] = etat.solution; losange(sx, sy); ctx.fillStyle = 'rgba(46,204,113,.55)'; ctx.fill(); ctx.strokeStyle = '#1e9e53'; ctx.lineWidth = 3; ctx.stroke();
       const a = centre(...scene.e), b = centre(sx, sy), c = centre(...scene.c);
@@ -93,7 +94,7 @@ export function creerScene(canvas, scene, opts = {}) {
     persos.forEach(o => {
       const [cx, cy] = centre(...o.p);
       if (o.halo) { ctx.beginPath(); ctx.ellipse(cx, cy, W * .36, H * .38, 0, 0, 7); ctx.strokeStyle = o.halo; ctx.lineWidth = 4; ctx.stroke(); ctx.fillStyle = o.halo + '55'; ctx.fill(); }
-      sprite(o.src, o.p[0], o.p[1], o.nom === 'Enutrof' ? 72 : 82);
+      sprite(o.src, o.p[0], o.p[1], o.nom === 'Enutrof' ? 64 : 72);
     });
     (etat.marques || []).forEach(m => {   // correction : case cliquée par chaque joueur
       const [cx, cy] = centre(...m.p);
