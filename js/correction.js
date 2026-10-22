@@ -2,6 +2,7 @@ import { db, ref, get, set, update, onValue } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
 import { texteDistance, classement, lireCoord } from "./carte.js";
 import { creerMonde } from "./monde.js";
+import { creerScene, caseAViser, lireCase, estJuste, COULEURS } from "./confusion.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -9,12 +10,16 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 let running = false, initing = false, ctx = null;
 let list = [], players = {}, index = null, answers = {}, expected = null, verdicts = {};
 let offs = [], offQ = [];
-let monde = null, mondeCle = '';
+let monde = null, mondeCle = '', sceneCle = '';
 let allAnswers = {};   // réponses des questions « classement » (corrigées automatiquement), par numéro de question
 
 // Question « classement » (GeoGuessr) : la bonne réponse vient de la banque locale, les points de la distance.
 const bankOf = q => QUESTIONS.find(x => x.id === q.id) || {};
 const isRank = q => !!(q && bankOf(q).classement);
+const isClic = q => !!(q && bankOf(q).scene);
+const isAuto = q => isRank(q) || isClic(q);   // corrigées automatiquement, sans le chef
+const justes = j => Object.fromEntries(Object.keys(players).map(id => [id, estJuste(bankOf(list[j]).scene, (allAnswers[j] || {})[id])]));
+const pointsOf = (j, id) => isClic(list[j]) ? (justes(j)[id] ? list[j].pts : 0) : rankOf(j)[id].points;
 const rankOf = j => { const q = list[j]; return classement(allAnswers[j], bankOf(q).a[bankOf(q).coord], Object.keys(players), q.pts); };
 
 // Intitulés des champs d'une question à plusieurs champs (null pour une question simple).
@@ -71,6 +76,31 @@ function renderCorrection() {
     $('c-expected').innerHTML = fields.map((l, k) =>
       `<span class="exp-line">${esc(l)} : <b>${esc(expected && expected[k] != null ? expected[k] : '…')}</b></span>`).join('');
   } else $('c-expected').textContent = expected ?? '…';
+  $('c-scenebox').hidden = !isClic(q);
+  if (isClic(q)) {
+    const bk = bankOf(q), sc = bk.scene, ok = justes(index), v = caseAViser(sc), cl = COULEURS[sc.conf];
+    $('c-mapbox').hidden = true;
+    $('c-expected').innerHTML = `<span class="exp-line">Confusion ${cl.nom} : rotation de ${esc(cl.angle)} autour de l'Enutrof</span>`;
+    $('c-scenetxt').textContent = 'La case verte est la bonne case à cliquer : le sort y est dévié sur le Comte Harebourg (traits pointillés).';
+    const marques = [], vus = {};
+    order().forEach(id => {
+      const c = lireCase(answers[id]);
+      if (!c) return;
+      const cle = c.join(','); const dec = (vus[cle] = (vus[cle] || 0) + 1) - 1;
+      marques.push({ p: c, label: [...players[id].name][0].toUpperCase(), moi: id === ctx.uid, dec: dec * 14 });
+    });
+    const cle = index + JSON.stringify(marques);
+    if (cle !== sceneCle) { sceneCle = cle; creerScene($('c-scene'), sc).dessiner({ solution: v, marques }); }
+    $('c-list').innerHTML = order().map(id => {
+      const a = answers[id], good = ok[id];
+      return `<li class="row rank ${good ? 'ok' : 'ko'}"><div class="who"><b>${esc(players[id].name)}${id === ctx.uid ? ' <small>(toi)</small>' : ''}</b><span>${good ? '✅ Touché !' : '❌ Raté'} +${good ? q.pts : 0} pt${good && q.pts >= 2 ? 's' : ''}</span></div>
+        <div class="ans">${a ? 'Case choisie : ' + esc(String(a).replace(',', ', ')) : '<i>(pas de réponse)</i>'}</div></li>`;
+    }).join('');
+    $('c-host').hidden = !ctx.isHost; $('c-wait').hidden = ctx.isHost;
+    $('c-prev').disabled = index === 0;
+    $('c-next').textContent = index === list.length - 1 ? 'Voir les résultats' : 'Question suivante →';
+    return;
+  }
   if (isRank(q)) {
     const bk = bankOf(q), res = rankOf(index), ids = Object.keys(res).sort((a, b) =>
       (res[a].rang ?? 1e9) - (res[b].rang ?? 1e9) || players[a].name.localeCompare(players[b].name));
@@ -142,7 +172,7 @@ function renderResults() {
   const rows = Object.keys(players).map(id => {
     let score = 0;
     list.forEach((q, j) => {
-      if (isRank(q)) { score += rankOf(j)[id].points; return; }
+      if (isAuto(q)) { score += pointsOf(j, id); return; }
       const n = fieldsOf(q) ? fieldsOf(q).length : 1;
       score += q.pts * (result(q, (verdicts[j] || {})[id]) || 0) / n;   // plusieurs champs : points au prorata des champs justes
     });
@@ -177,7 +207,7 @@ $('c-prev').onclick = () => {
 
 $('c-next').onclick = async () => {
   const j = verdicts[index] || {};
-  const pending = isRank(list[index]) ? 0 : Object.keys(players).filter(id => result(list[index], j[id]) === null).length;
+  const pending = isAuto(list[index]) ? 0 : Object.keys(players).filter(id => result(list[index], j[id]) === null).length;
   if (pending && !confirm(`${pending} réponse(s) pas encore corrigée(s) : elles compteront comme fausses. Continuer ?`)) return;
   try {
     if (index === list.length - 1) await update(path('meta'), { phase: 'results' });
@@ -194,7 +224,7 @@ export async function enter(c) {
     const snap = await get(path('questions'));
     const v = snap.val() || [];
     list = Array.isArray(v) ? v : Object.values(v);
-    list.forEach((q, j) => { if (isRank(q)) offs.push(onValue(path(`answers/${j}`), s => { allAnswers[j] = s.val() || {}; render(); })); });
+    list.forEach((q, j) => { if (isAuto(q)) offs.push(onValue(path(`answers/${j}`), s => { allAnswers[j] = s.val() || {}; render(); })); });
     offs.push(onValue(path('players'), s => { players = s.val() || {}; render(); }));
     offs.push(onValue(path('verdicts'), s => { verdicts = s.val() || {}; render(); }));
     offs.push(onValue(path('correction/index'), s => {

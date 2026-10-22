@@ -36,7 +36,7 @@
       </fieldset>
       <div id="quizz-opts">
         <label class="field">Nombre de questions
-          <select id="nb"><option>5</option><option selected>10</option><option>20</option><option>50</option><option>165</option></select>
+          <select id="nb"><option>5</option><option selected>10</option><option>20</option><option>50</option><option>175</option></select>
         </label>
         <fieldset><legend>Catégories</legend><div id="cats"></div></fieldset>
       </div>
@@ -67,6 +67,10 @@
       <img id="p-img" class="carte" alt="Carte à identifier" hidden>
       <input id="p-answer" placeholder="Ta réponse…" autocomplete="off" maxlength="200">
       <div id="p-fields" hidden></div>
+      <div id="p-scenebox" hidden>
+        <p class="hint">Ta confusion dévie ton sort : clique la case à viser pour toucher le Comte Harebourg (ton choix est enregistré automatiquement).</p>
+        <canvas id="p-scene" class="scene"></canvas>
+      </div>
       <div id="p-mapbox" hidden>
         <div class="zoombar"><small id="p-maphint">Clique sur la carte du monde pour placer ton repère (x vers l'est, y vers le sud). <b>Le plus proche gagne les points !</b></small><small id="p-hover"></small></div>
         <div id="p-map" class="monde"></div>
@@ -96,6 +100,7 @@
       <h2 id="c-text"></h2>
       <img id="c-img" class="carte" alt="Carte à identifier" hidden>
       <div class="expected"><small>Réponse attendue</small><b id="c-expected"></b></div>
+      <div id="c-scenebox" hidden><p id="c-scenetxt" class="hint"></p><canvas id="c-scene" class="scene"></canvas></div>
       <div id="c-mapbox" hidden><p id="c-pile" class="pile" hidden></p><div id="c-map" class="monde"></div></div>
       <ul id="c-list"></ul>
       <div id="c-host" class="btns" hidden>

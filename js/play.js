@@ -2,6 +2,7 @@ import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockRe
 import { QUESTIONS } from "./questions.js";
 import { creerMonde } from "./monde.js";
 import { lireCoord } from "./carte.js";
+import { creerScene } from "./confusion.js";
 
 const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
 const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
@@ -32,6 +33,14 @@ function drawPin() {
   if (monde) monde.afficher(pin ? [{ ...pin, cls: 'me', label: '📍' }] : []);
   $('p-pos').textContent = pin ? `Ton repère : ${pin.x}, ${pin.y}` : 'Pas encore de repère : clique sur la carte.';
 }
+const isClic = q => !!bankOf(q).scene;
+let sceneJeu = null, choix = null;
+function setChoix(x, y) {
+  if (cur === null || lockedFor === cur || !isClic(list[cur])) return;
+  choix = [x, y];
+  sceneJeu.dessiner({ choix });
+  onType();
+}
 const imageOf = q => (QUESTIONS.find(x => x.id === q.id) || {}).img || null;
 
 function view(name) {
@@ -40,6 +49,7 @@ function view(name) {
 
 // Réponse saisie : un texte, ou un objet {numéro du champ: texte} pour une question à plusieurs champs (null si vide).
 function readValue(i) {
+  if (isClic(list[i])) return choix ? choix.join(',') : null;
   if (isRank(list[i])) return pin ? { 0: `${pin.x}, ${pin.y}` } : null;
   if (!fieldsOf(list[i])) return $('p-answer').value.slice(0, 200) || null;
   const o = {};
@@ -81,6 +91,10 @@ function openQuestion(i) {
   const input = $('p-answer');
   input.hidden = !!fields; $('p-fields').hidden = !fields || rank;
   $('p-mapbox').hidden = !rank;
+  const clic = isClic(q);
+  $('p-scenebox').hidden = !clic;
+  choix = null;
+  if (clic) sceneJeu = creerScene($('p-scene'), bankOf(q).scene, { surClic: setChoix });
   pin = null;
   if (rank) {
     if (!monde) monde = creerMonde($('p-map'), { surClic: setPin, surSurvol: (x, y) => { $('p-hover').textContent = `x ${x}, y ${y}`; } });
@@ -91,12 +105,14 @@ function openQuestion(i) {
     $('p-fields').innerHTML = fields.map((label, k) =>
       `<label class="field">${esc(label)}<input data-k="${k}" maxlength="200" autocomplete="off"></label>`).join('');
   }
-  if (!rank) (fields ? inputs()[0] : input).focus();
+  if (clic) input.hidden = true;
+  if (!rank && !clic) (fields ? inputs()[0] : input).focus();
   // Reprise après un rechargement de page : on récupère la réponse déjà enregistrée.
   get(ref(db, `rooms/${ctx.code}/answers/${i}/${ctx.uid}`)).then(s => {
     if (!s.exists() || cur !== i) return;
     const v = s.val();
-    if (rank) { const c = v && typeof v === 'object' ? lireCoord(v[0]) : null; if (c && !pin) { pin = { x: c[0], y: c[1] }; drawPin(); } }
+    if (clic) { const c = typeof v === 'string' ? v.split(',').map(Number) : null; if (c && c.length === 2 && !choix) { choix = c; sceneJeu.dessiner({ choix }); } }
+    else if (rank) { const c = v && typeof v === 'object' ? lireCoord(v[0]) : null; if (c && !pin) { pin = { x: c[0], y: c[1] }; drawPin(); } }
     else if (fields) inputs().forEach((el, k) => { if (!el.value && typeof v === 'object' && v[k] != null) el.value = v[k]; });
     else if (!input.value && typeof v === 'string') input.value = v;
     lastSaved[i] = JSON.stringify(readValue(i));
