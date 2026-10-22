@@ -94,8 +94,6 @@ export function creerScene(canvas, scene, opts = {}) {
       const [cx, cy] = centre(...o.p);
       if (o.halo) { ctx.beginPath(); ctx.ellipse(cx, cy, W * .36, H * .38, 0, 0, 7); ctx.strokeStyle = o.halo; ctx.lineWidth = 4; ctx.stroke(); ctx.fillStyle = o.halo + '55'; ctx.fill(); }
       sprite(o.src, o.p[0], o.p[1], o.nom === 'Enutrof' ? 72 : 82);
-      ctx.font = 'bold 11px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fff';
-      const ty = cy - (o.nom === 'Enutrof' ? 62 : 72); ctx.strokeText(o.nom, cx, ty); ctx.fillText(o.nom, cx, ty);
     });
     (etat.marques || []).forEach(m => {   // correction : case cliquée par chaque joueur
       const [cx, cy] = centre(...m.p);
