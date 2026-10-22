@@ -2,7 +2,7 @@ import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockRe
 import { QUESTIONS } from "./questions.js";
 import { creerMonde } from "./monde.js";
 import { lireCoord } from "./carte.js";
-import { creerScene, infosScene } from "./confusion.js";
+import { creerScene, infosScene, lireCase, lireTemps } from "./confusion.js";
 
 const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
 const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
@@ -34,10 +34,12 @@ function drawPin() {
   $('p-pos').textContent = pin ? `Ton repère : ${pin.x}, ${pin.y}` : 'Pas encore de repère : clique sur la carte.';
 }
 const isClic = q => !!bankOf(q).scene;
-let sceneJeu = null, choix = null;
+const RUSH_MS = 3000;   // question de rapidité : 3 s d'annonce avant d'afficher la confusion
+let sceneJeu = null, choix = null, choixMs = null, revealAt = 0;
 function setChoix(x, y) {
   if (cur === null || lockedFor === cur || !isClic(list[cur])) return;
-  choix = [x, y];
+  if (serverNow() < revealAt) return;   // la confusion n'est pas encore affichée
+  choix = [x, y]; choixMs = Math.max(0, Math.round(serverNow() - revealAt));
   sceneJeu.dessiner({ choix });
   onType();
 }
@@ -49,7 +51,7 @@ function view(name) {
 
 // Réponse saisie : un texte, ou un objet {numéro du champ: texte} pour une question à plusieurs champs (null si vide).
 function readValue(i) {
-  if (isClic(list[i])) return choix ? choix.join(',') : null;
+  if (isClic(list[i])) return choix ? choix.join(',') + '@' + (choixMs ?? 0) : null;
   if (isRank(list[i])) return pin ? { 0: `${pin.x}, ${pin.y}` } : null;
   if (!fieldsOf(list[i])) return $('p-answer').value.slice(0, 200) || null;
   const o = {};
@@ -92,8 +94,9 @@ function openQuestion(i) {
   input.hidden = !!fields; $('p-fields').hidden = !fields || rank;
   $('p-mapbox').hidden = !rank;
   const clic = isClic(q);
-  $('p-scenebox').hidden = !clic;
-  choix = null;
+  $('p-scenebox').hidden = true;   // affichée par tick() une fois l'annonce terminée
+  $('p-rush').hidden = !clic;
+  choix = null; choixMs = null; revealAt = clic ? sched[i].start + RUSH_MS : 0;
   if (clic) $('p-conf').innerHTML = infosScene(bankOf(q).scene);
   if (clic) sceneJeu = creerScene($('p-scene'), bankOf(q).scene, { surClic: setChoix });
   pin = null;
@@ -112,7 +115,7 @@ function openQuestion(i) {
   get(ref(db, `rooms/${ctx.code}/answers/${i}/${ctx.uid}`)).then(s => {
     if (!s.exists() || cur !== i) return;
     const v = s.val();
-    if (clic) { const c = typeof v === 'string' ? v.split(',').map(Number) : null; if (c && c.length === 2 && !choix) { choix = c; sceneJeu.dessiner({ choix }); } }
+    if (clic) { const c = lireCase(v); if (c && !choix) { choix = c; choixMs = lireTemps(v) ?? 0; sceneJeu.dessiner({ choix }); } }
     else if (rank) { const c = v && typeof v === 'object' ? lireCoord(v[0]) : null; if (c && !pin) { pin = { x: c[0], y: c[1] }; drawPin(); } }
     else if (fields) inputs().forEach((el, k) => { if (!el.value && typeof v === 'object' && v[k] != null) el.value = v[k]; });
     else if (!input.value && typeof v === 'string') input.value = v;
@@ -186,6 +189,11 @@ function tick() {
   }
   view('live');
   if (cur !== i) openQuestion(i);
+  if (revealAt) {   // question de rapidité : annonce de 3 s, puis la scène apparaît
+    const att = revealAt - now;
+    $('p-rush').hidden = att <= 0; $('p-scenebox').hidden = att > 0;
+    $('p-rushcount').textContent = Math.max(1, Math.ceil(att / 1000));
+  }
   $('p-skip').hidden = !ctx.isHost;
   $('p-skip').disabled = skips[i] != null;
   const left = (s.end - now) / 1000;

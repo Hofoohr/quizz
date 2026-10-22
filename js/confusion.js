@@ -37,8 +37,26 @@ export function caseAViser(scene) {
   const k = COULEURS[scene.conf].k, [dx, dy] = tourner([scene.c[0] - scene.e[0], scene.c[1] - scene.e[1]], 4 - k);
   return [scene.e[0] + dx, scene.e[1] + dy];
 }
-export const lireCase = t => { const m = /^\s*(-?\d+)\s*,\s*(-?\d+)\s*$/.exec(String(t ?? '')); return m ? [+m[1], +m[2]] : null; };
+// Réponse enregistrée : « x,y@ms » (ms = temps écoulé entre l'affichage de la scène et le dernier clic). L'ancien format « x,y » reste lisible.
+export const lireCase = t => { const m = /^\s*(-?\d+)\s*,\s*(-?\d+)\s*(?:@\s*(\d+))?\s*$/.exec(String(t ?? '')); return m ? [+m[1], +m[2]] : null; };
+export const lireTemps = t => { const m = /@\s*(\d+)\s*$/.exec(String(t ?? '')); return m ? +m[1] : null; };
 export const estJuste = (scene, t) => { const c = lireCase(t), v = caseAViser(scene); return !!c && c[0] === v[0] && c[1] === v[1]; };
+
+// Question de rapidité : parmi les bonnes réponses, la plus rapide gagne le plus de points.
+// reponses = { idJoueur: « x,y@ms » }, joueurs = identifiants. Rang = 1 + nombre de bonnes réponses strictement plus rapides (ex æquo : même rang).
+// Points = pts × (n − rang + 1) / n avec n le nombre de joueurs ; mauvaise ou pas de réponse = 0.
+// Retourne { idJoueur: { juste, ms, rang, points } }.
+export function classementRapide(reponses, scene, joueurs, pts) {
+  const n = joueurs.length, rep = reponses || {}, out = {};
+  const ms = id => lireTemps(rep[id]) ?? Infinity;
+  joueurs.forEach(id => {
+    const juste = estJuste(scene, rep[id]);
+    if (!juste) { out[id] = { juste: false, ms: null, rang: null, points: 0 }; return; }
+    const rang = 1 + joueurs.filter(o => estJuste(scene, rep[o]) && ms(o) < ms(id)).length;
+    out[id] = { juste: true, ms: Number.isFinite(ms(id)) ? ms(id) : null, rang, points: Math.round(pts * (n - rang + 1) / n * 10) / 10 };
+  });
+  return out;
+}
 
 // --- Dessin ---
 const W = 52, H = 26, HAUT = 80;   // largeur / hauteur d'une case, marge en haut pour les personnages

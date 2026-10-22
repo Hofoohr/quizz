@@ -2,7 +2,7 @@ import { db, ref, get, set, update, onValue } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
 import { texteDistance, classement, lireCoord } from "./carte.js";
 import { creerMonde } from "./monde.js";
-import { creerScene, caseAViser, lireCase, estJuste, infosScene, PLAGE_VIE, COULEURS } from "./confusion.js";
+import { creerScene, caseAViser, lireCase, classementRapide, infosScene, PLAGE_VIE, COULEURS } from "./confusion.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -18,8 +18,8 @@ const bankOf = q => QUESTIONS.find(x => x.id === q.id) || {};
 const isRank = q => !!(q && bankOf(q).classement);
 const isClic = q => !!(q && bankOf(q).scene);
 const isAuto = q => isRank(q) || isClic(q);   // corrigées automatiquement, sans le chef
-const justes = j => Object.fromEntries(Object.keys(players).map(id => [id, estJuste(bankOf(list[j]).scene, (allAnswers[j] || {})[id])]));
-const pointsOf = (j, id) => isClic(list[j]) ? (justes(j)[id] ? list[j].pts : 0) : rankOf(j)[id].points;
+const rapideOf = j => classementRapide(allAnswers[j], bankOf(list[j]).scene, Object.keys(players), list[j].pts);
+const pointsOf = (j, id) => isClic(list[j]) ? rapideOf(j)[id].points : rankOf(j)[id].points;
 const rankOf = j => { const q = list[j]; return classement(allAnswers[j], bankOf(q).a[bankOf(q).coord], Object.keys(players), q.pts); };
 
 // Intitulés des champs d'une question à plusieurs champs (null pour une question simple).
@@ -78,13 +78,14 @@ function renderCorrection() {
   } else $('c-expected').textContent = expected ?? '…';
   $('c-scenebox').hidden = !isClic(q);
   if (isClic(q)) {
-    const bk = bankOf(q), sc = bk.scene, ok = justes(index), v = caseAViser(sc), cl = COULEURS[sc.conf];
+    const bk = bankOf(q), sc = bk.scene, res = rapideOf(index), v = caseAViser(sc), cl = COULEURS[sc.conf];
     $('c-mapbox').hidden = true;
     $('c-conf').innerHTML = infosScene(sc);
     $('c-expected').innerHTML = `<span class="exp-line">Vie ${sc.pv} % (${PLAGE_VIE[sc.conf]}) → rotation de ${esc(cl.angle)} autour de l'Enutrof</span>`;
-    $('c-scenetxt').textContent = 'La case verte est la bonne case à cliquer : le sort y est dévié sur le Comte Harebourg (traits pointillés).';
+    $('c-scenetxt').textContent = 'La case verte est la bonne case à cliquer : le sort y est dévié sur le Comte Harebourg (traits pointillés). Question de rapidité : le plus rapide gagne le plus de points.';
+    const ids = order().sort((a, b) => (res[a].rang ?? 1e9) - (res[b].rang ?? 1e9) || players[a].name.localeCompare(players[b].name));
     const marques = [], vus = {};
-    order().forEach(id => {
+    ids.forEach(id => {
       const c = lireCase(answers[id]);
       if (!c) return;
       const cle = c.join(','); const dec = (vus[cle] = (vus[cle] || 0) + 1) - 1;
@@ -92,10 +93,12 @@ function renderCorrection() {
     });
     const cle = index + JSON.stringify(marques);
     if (cle !== sceneCle) { sceneCle = cle; creerScene($('c-scene'), sc).dessiner({ solution: v, marques }); }
-    $('c-list').innerHTML = order().map(id => {
-      const a = answers[id], good = ok[id];
-      return `<li class="row rank ${good ? 'ok' : 'ko'}"><div class="who"><b>${esc(players[id].name)}${id === ctx.uid ? ' <small>(toi)</small>' : ''}</b><span>${good ? '✅ Touché !' : '❌ Raté'} +${good ? q.pts : 0} pt${good && q.pts >= 2 ? 's' : ''}</span></div>
-        <div class="ans">${a ? 'Case choisie : ' + esc(String(a).replace(',', ', ')) : '<i>(pas de réponse)</i>'}</div></li>`;
+    $('c-list').innerHTML = ids.map(id => {
+      const r = res[id], a = answers[id], c = lireCase(a);
+      const medal = r.rang === null ? '❌' : ['🥇', '🥈', '🥉'][r.rang - 1] || r.rang + '.';
+      const temps = r.ms === null ? '' : ` ⚡ ${String(Math.round(r.ms / 100) / 10).replace('.', ',')} s`;
+      return `<li class="row rank ${r.juste ? 'ok' : 'ko'}"><div class="who"><b>${medal} ${esc(players[id].name)}${id === ctx.uid ? ' <small>(toi)</small>' : ''}</b><span>+${String(r.points).replace('.', ',')} pt${r.points >= 2 ? 's' : ''}</span></div>
+        <div class="ans">${c ? `${r.juste ? 'Touché' : 'Raté'} : case ${c.join(', ')}${temps}` : '<i>(pas de réponse)</i>'}</div></li>`;
     }).join('');
     $('c-host').hidden = !ctx.isHost; $('c-wait').hidden = ctx.isHost;
     $('c-prev').disabled = index === 0;
