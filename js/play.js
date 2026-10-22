@@ -2,7 +2,7 @@ import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockRe
 import { QUESTIONS } from "./questions.js";
 import { creerMonde } from "./monde.js";
 import { lireCoord } from "./carte.js";
-import { creerScene } from "./confusion.js";
+import { creerScene, infosScene } from "./confusion.js";
 
 const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
 const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
@@ -94,6 +94,7 @@ function openQuestion(i) {
   const clic = isClic(q);
   $('p-scenebox').hidden = !clic;
   choix = null;
+  if (clic) $('p-conf').innerHTML = infosScene(bankOf(q).scene);
   if (clic) sceneJeu = creerScene($('p-scene'), bankOf(q).scene, { surClic: setChoix });
   pin = null;
   if (rank) {

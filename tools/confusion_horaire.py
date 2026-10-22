@@ -36,6 +36,9 @@ def tourner(d, k):
     return dx, dy
 
 
+PV = {"rouge": (76, 100), "bleue": (26, 74), "verte": (1, 24)}   # % de vie de l'Enutrof : rouge de 100 à 75 %, bleue de 75 à 25 %, verte de 25 à 0 %
+
+
 def scene(rng, conf):
     while True:
         e = (rng.randrange(N), rng.randrange(N))
@@ -46,7 +49,7 @@ def scene(rng, conf):
         dx, dy = tourner(t, 4 - ROT[conf])
         v = (e[0] + dx, e[1] + dy)
         if 0 <= v[0] < N and 0 <= v[1] < N and v not in (e, c):
-            return {"n": N, "e": list(e), "c": list(c), "conf": conf}
+            return {"n": N, "e": list(e), "c": list(c), "conf": conf, "pv": rng.randint(*PV[conf])}
 
 
 def main():
@@ -67,7 +70,7 @@ def main():
             if cle not in vues:
                 vues.add(cle); scenes.append(s); n += 1
     rng.shuffle(scenes)   # les couleurs sont mélangées
-    items = [{"q": f"Confusion horaire {s['conf']} : clique sur la case à viser pour toucher le Comte Harebourg !",
+    items = [{"q": "Confusion horaire : clique sur la case à viser pour toucher le Comte Harebourg !",
               "scene": s, "pts": PTS, "temps": TEMPS} for s in scenes]
     lignes = ["    " + json.dumps(i, ensure_ascii=False) + "," for i in items]
     (ROOT / "js/questions/confusion.js").write_text(
