@@ -51,9 +51,9 @@ export function creerScene(canvas, scene, opts = {}) {
     return Math.abs(px - cx) / (W / 2) + Math.abs(py - cy) / (H / 2) <= 1 ? [x, y] : null;
   };
   const pointeur = e => { const r = canvas.getBoundingClientRect(); return [(e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height]; };
-  function sprite(src, x, y, taille) {
+  function sprite(src, x, y, haut) {   // personnage découpé sans marge : les pieds sont posés au centre de la case
     const im = charge(src), [cx, cy] = centre(x, y);
-    if (im.complete && im.naturalWidth) ctx.drawImage(im, cx - taille / 2, cy + H / 4 - taille, taille, taille);
+    if (im.complete && im.naturalWidth) { const l = haut * im.naturalWidth / im.naturalHeight; ctx.drawImage(im, cx - l / 2, cy + H / 4 - haut, l, haut); }
   }
   function dessiner(e) {
     if (e) etat = { ...etat, ...e };
@@ -81,9 +81,9 @@ export function creerScene(canvas, scene, opts = {}) {
     persos.forEach(o => {
       const [cx, cy] = centre(...o.p);
       if (o.halo) { ctx.beginPath(); ctx.ellipse(cx, cy, W * .36, H * .38, 0, 0, 7); ctx.strokeStyle = o.halo; ctx.lineWidth = 4; ctx.stroke(); ctx.fillStyle = o.halo + '55'; ctx.fill(); }
-      sprite(o.src, o.p[0], o.p[1], o.nom === 'Enutrof' ? 54 : 78);
+      sprite(o.src, o.p[0], o.p[1], o.nom === 'Enutrof' ? 72 : 82);
       ctx.font = 'bold 11px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fff';
-      const ty = cy - (o.nom === 'Enutrof' ? 44 : 68); ctx.strokeText(o.nom, cx, ty); ctx.fillText(o.nom, cx, ty);
+      const ty = cy - (o.nom === 'Enutrof' ? 62 : 72); ctx.strokeText(o.nom, cx, ty); ctx.fillText(o.nom, cx, ty);
     });
     (etat.marques || []).forEach(m => {   // correction : case cliquée par chaque joueur
       const [cx, cy] = centre(...m.p);
