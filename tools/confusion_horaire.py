@@ -36,6 +36,7 @@ def tourner(d, k):
     return dx, dy
 
 
+NB_ECRITURES = {"rouge": 5, "bleue": 4, "verte": 5}   # nombre d'écritures de chaque confusion dans js/confusion.js (AFFICHAGE) : une seule est affichée
 PV = {"rouge": (76, 100), "bleue": (26, 74), "verte": (1, 24)}   # % de vie de l'Enutrof : rouge de 100 à 75 %, bleue de 75 à 25 %, verte de 25 à 0 %
 
 
@@ -49,7 +50,7 @@ def scene(rng, conf):
         dx, dy = tourner(t, 4 - ROT[conf])
         v = (e[0] + dx, e[1] + dy)
         if 0 <= v[0] < N and 0 <= v[1] < N and v not in (e, c):
-            return {"n": N, "e": list(e), "c": list(c), "conf": conf, "pv": rng.randint(*PV[conf])}
+            return {"n": N, "e": list(e), "c": list(c), "conf": conf, "pv": rng.randint(*PV[conf]), "aff": rng.randrange(NB_ECRITURES[conf])}
 
 
 def main():

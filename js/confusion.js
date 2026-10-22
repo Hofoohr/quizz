@@ -9,17 +9,17 @@ export const COULEURS = {
   verte: { k: 3, hex: '#2fc24b', nom: 'verte', angle: '270° dans le sens horaire (soit 90° dans le sens anti-horaire)' },
 };
 
-// Texte affiché dans le jeu pour chaque confusion (plusieurs écritures de la même rotation) et plage de vie de l'Enutrof qui la déclenche.
+// Texte affiché dans le jeu pour chaque confusion (plusieurs écritures de la même rotation : chaque scène en montre une seule, « aff ») et plage de vie de l'Enutrof qui la déclenche.
 export const AFFICHAGE = {
   rouge: ['270° Contre Horaire', 'Contre Horaire 3Pi/2', 'Horaire 1Pi/2', 'Horaire 2Pi/4', 'Contre Horaire 6Pi/4'],
   bleue: ['Horaire 2Pi/2', 'Horaire 4Pi/4', 'Contre Horaire 2Pi/2', 'Contre Horaire 4Pi/4'],
   verte: ['270° Horaire', 'Contre Horaire 1Pi/2', 'Horaire 3Pi/2', 'Contre Horaire 2Pi/4', 'Horaire 6Pi/4'],
 };
 export const PLAGE_VIE = { rouge: '100 % à 75 %', bleue: '75 % à 25 %', verte: '25 % à 0 %' };
-// Encadré « vie + confusion » affiché au-dessus de la scène (HTML).
+// Encadré « vie + confusion » (une seule écriture de la confusion) affiché au-dessus de la scène (HTML).
 export const infosScene = scene => `<div class="conf" style="--c:${COULEURS[scene.conf].hex}">
   <div class="pv"><span>❤️ Vie de l'Enutrof : <b>${scene.pv} %</b></span><i style="width:${scene.pv}%"></i></div>
-  <ul>${AFFICHAGE[scene.conf].map(t => `<li>${t}</li>`).join('')}</ul></div>`;
+  <p class="rot">${AFFICHAGE[scene.conf][scene.aff % AFFICHAGE[scene.conf].length]}</p></div>`;
 
 // Un quart de tour dans le sens horaire (à l'écran) d'un décalage (dx, dy), répété k fois.
 export function tourner([dx, dy], k) {
