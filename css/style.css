@@ -35,6 +35,19 @@ fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 1.2rem}
 #players li{display:flex;justify-content:space-between;align-items:center;gap:.6rem}
 #players li span{min-width:0;overflow-wrap:anywhere}
 .kick{flex:none;padding:.25rem .6rem;border:1px solid var(--bad);border-radius:6px;background:none;color:var(--bad);font:inherit;font-size:.85rem;cursor:pointer}
+#app.wide{max-width:960px}
+.stats-link{margin:1rem 0 0;text-align:center;font-size:.8rem} .stats-link a,.hint a{color:var(--muted)}
+.s-resume{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;margin:1rem 0}
+.s-resume div{display:flex;flex-direction:column;padding:.5rem .7rem;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.s-resume span{font-size:1.4rem;font-weight:700;color:var(--accent)}
+.s-filtres{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0}
+.s-filtres select,.s-filtres input{width:auto;flex:1 1 180px;margin:0}
+#s-table{width:100%;border-collapse:collapse;font-size:.92rem}
+#s-table th,#s-table td{padding:.4rem .5rem;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+#s-table td:nth-child(2){overflow-wrap:anywhere}
+#s-table td:nth-child(3),#s-table td:nth-child(4){white-space:nowrap}
+.barre{display:inline-block;width:60px;height:8px;border-radius:4px;background:var(--line);vertical-align:middle;overflow:hidden}
+.barre i{display:block;height:100%;background:var(--good)}
 label.pub{display:flex;align-items:center;gap:.5rem;margin:.6rem 0 .4rem}
 label.pub input{width:auto;margin:0;flex:none}
 #open-list{list-style:none;padding:0;margin:0}

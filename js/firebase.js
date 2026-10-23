@@ -4,7 +4,7 @@ import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/1
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-export { ref, get, set, update, remove, onValue, onDisconnect, serverTimestamp }
+export { ref, get, set, update, remove, onValue, onDisconnect, serverTimestamp, runTransaction }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const app = initializeApp(firebaseConfig);
