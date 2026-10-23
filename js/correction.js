@@ -90,7 +90,8 @@ function renderCorrection() {
     const ids = order().sort((a, b) => (res[a].rang ?? 1e9) - (res[b].rang ?? 1e9) || players[a].name.localeCompare(players[b].name));
     $('c-list').innerHTML = ids.map(id => {
       const r = res[id], medal = r.rang === null ? '❌' : ['🥇', '🥈', '🥉'][r.rang - 1] || r.rang + '.';
-      const t = r.ms === null ? "n'a pas trouvé" : `trouvé en ${String(Math.round(r.ms / 100) / 10).replace('.', ',')} s`;
+      const ess = r.essais === null ? '' : r.essais <= 1 ? ' du premier coup' : ` en ${r.essais} essais`;
+      const t = r.ms === null ? (r.essais ? `n'a pas trouvé après ${r.essais} essai${r.essais > 1 ? 's' : ''}` : "n'a pas trouvé (aucun essai)") : `trouvé en ${String(Math.round(r.ms / 100) / 10).replace('.', ',')} s${ess}`;
       return `<li class="row rank ${r.trouve ? 'ok' : 'ko'}"><div class="who"><b>${medal} ${esc(players[id].name)}${id === ctx.uid ? ' <small>(toi)</small>' : ''}</b><span>+${String(r.points).replace('.', ',')} pt${r.points >= 2 ? 's' : ''}</span></div>
         <div class="ans">${r.trouve ? '⚡ ' : ''}${t}</div></li>`;
     }).join('');
