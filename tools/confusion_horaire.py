@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 N = 15                        # côté de la grille
 NB_SCENES = 200
 PORTEE_MAX = 11               # distance maximale (en cases, |dx| + |dy|) entre l'Enutrof et le Comte
-PTS, TEMPS = 6, 16   # question de rapidité : 3 s d'annonce + 13 s pour répondre ; le plus rapide gagne le plus de points (6 pour le 1er)
+PTS, TEMPS = 6, 11   # question de rapidité : 3 s d'annonce + 8 s pour répondre ; le plus rapide gagne le plus de points (6 pour le 1er)
 COULEURS_ENUTROF = [13732958, 15851694, 3093806, 14325820, 7814953, 9995877]   # maleColors de la classe 3 (DofusDB)
 LOOK_ENUTROF = "{1|30,2044|%s|120}" % ",".join(f"{i + 1}={v}" for i, v in enumerate(COULEURS_ENUTROF))
 SOURCES = {"comte.png": "https://api.dofusdb.fr/img/monsters/993.png",
