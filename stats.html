@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statistiques – Quizz Culture &amp; GeoGuessr Dofus</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main id="app" class="wide">
+  <section class="screen active">
+    <h1>Statistiques</h1>
+    <p class="lead">Pourcentage de joueurs qui réussissent chaque question (tous les champs justes). Les chiffres s'ajoutent à la fin de chaque partie ; aucun pseudo n'est enregistré.</p>
+    <div id="s-cats"></div>
+    <div class="s-filtres">
+      <select id="s-cat"><option value="">Toutes les catégories</option></select>
+      <input id="s-q" placeholder="Rechercher une question…" autocomplete="off">
+      <select id="s-min">
+        <option value="1">Au moins 1 réponse</option><option value="3">Au moins 3 réponses</option><option value="10">Au moins 10 réponses</option><option value="0">Même sans réponse</option>
+      </select>
+      <select id="s-tri">
+        <option value="dur">Les plus difficiles d'abord</option><option value="facile">Les plus faciles d'abord</option><option value="nb">Les plus jouées d'abord</option>
+      </select>
+    </div>
+    <p id="s-etat" class="hint"></p>
+    <table id="s-table"><thead><tr><th>Catégorie</th><th>Question</th><th>Joueurs</th><th>Réussite</th></tr></thead><tbody></tbody></table>
+    <button id="s-plus" class="btn ghost" hidden>Afficher plus</button>
+    <p class="hint"><a href="index.html">← Retour au quizz</a></p>
+  </section>
+</main>
+<script type="module" src="js/stats.js"></script>
+</body>
+</html>

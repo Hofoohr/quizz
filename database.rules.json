@@ -13,9 +13,27 @@
         "$other": { ".validate": false }
       }
     },
+    // Statistiques de réussite par question (clé = empreinte du contenu de la question) : lisibles par tous, incrémentées par le chef en fin de partie.
+    "stats": {
+      ".read": "auth != null",
+      "$cle": {
+        ".write": "auth != null && newData.exists()",
+        ".validate": "newData.hasChildren(['n', 'ok']) && newData.child('n').isNumber() && newData.child('ok').isNumber() && newData.child('ok').val() <= newData.child('n').val() && newData.child('n').val() >= (data.exists() ? data.child('n').val() : 0) && newData.child('n').val() <= (data.exists() ? data.child('n').val() : 0) + 10 && newData.child('ok').val() >= (data.exists() ? data.child('ok').val() : 0) && newData.child('ok').val() - (data.exists() ? data.child('ok').val() : 0) <= newData.child('n').val() - (data.exists() ? data.child('n').val() : 0)",
+        "n": { ".validate": "newData.isNumber()" },
+        "ok": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
     "rooms": {
       "$code": {
         "$other": { ".validate": false },
+
+        // Marque « statistiques déjà enregistrées pour cette partie » (écrite par le chef).
+        "statsDone": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+          ".validate": "newData.isBoolean()"
+        },
 
         "meta": {
           ".read": "auth != null",

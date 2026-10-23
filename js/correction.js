@@ -1,4 +1,4 @@
-import { db, ref, get, set, update, onValue } from "./firebase.js";
+import { db, ref, get, set, update, onValue, runTransaction } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
 import { texteDistance, classement, lireCoord } from "./carte.js";
 import { creerMonde } from "./monde.js";
@@ -196,8 +196,41 @@ function renderCorrection() {
   $('c-next').textContent = index === list.length - 1 ? 'Voir les résultats' : 'Question suivante →';
 }
 
+// Statistiques de réussite : à la fin de la partie, le chef ajoute pour chaque question « nombre de joueurs » et « nombre de réussites »
+// dans stats/<clé de la question> (aucune donnée personnelle). Un joueur réussit quand tous les champs sont justes (voir stats.html).
+let statsEnvoyees = false;
+async function enregistrerStats() {
+  if (statsEnvoyees || !ctx || !ctx.isHost || !list.length) return;
+  statsEnvoyees = true;
+  try {
+    const verr = (await get(path('verdicts'))).val() || {};
+    const ids = Object.keys(players);
+    const lignes = await Promise.all(list.map(async (q, j) => {
+      const bk = bankOf(q);
+      if (!bk.cle) return null;
+      let n = 0, ok = 0;
+      if (isAuto(q)) {
+        allAnswers[j] = (await get(path(`answers/${j}`))).val() || {};
+        if (isRank(q)) { const r = rankOf(j); ids.forEach(id => { n++; ok += r[id].d === 0 ? 1 : 0; }); }   // GeoGuessr : réussi = pile sur la bonne carte
+        else if (isClic(q)) { const r = rapideOf(j); ids.forEach(id => { n++; ok += r[id].juste ? 1 : 0; }); }
+        else { const r = pixelOf(j); ids.forEach(id => { n++; ok += r[id].trouve ? 1 : 0; }); }
+      } else {
+        const nb = fieldsOf(q) ? fieldsOf(q).length : 1;
+        ids.forEach(id => { const r = result(q, (verr[j] || {})[id]); if (r === null) return; n++; ok += r === nb ? 1 : 0; });   // pas de verdict du chef : non compté
+      }
+      return n ? { cle: bk.cle, n, ok } : null;
+    }));
+    // un seul enregistrement par partie (rooms/<code>/statsDone) : si le chef recharge la page, on ne compte pas deux fois
+    const marque = await runTransaction(path('statsDone'), cur => (cur ? undefined : true));
+    if (!marque.committed) return;
+    await Promise.all(lignes.filter(Boolean).map(l => runTransaction(ref(db, `stats/${l.cle}`),
+      cur => ({ n: ((cur && cur.n) || 0) + l.n, ok: ((cur && cur.ok) || 0) + l.ok }))));
+  } catch (e) { console.warn('Statistiques non enregistrées :', e); }
+}
+
 function renderResults() {
   document.body.classList.remove('large');
+  enregistrerStats();
   const max = list.reduce((s, q) => s + q.pts, 0);
   const rows = Object.keys(players).map(id => {
     let score = 0;
@@ -267,7 +300,7 @@ export async function enter(c) {
 }
 
 export function stop() {
-  running = false;
+  running = false; statsEnvoyees = false;
   document.body.classList.remove('large'); initing = false;
   offs.forEach(u => u()); offQ.forEach(u => u());
   offs = []; offQ = [];

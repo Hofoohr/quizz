@@ -29,11 +29,21 @@ import { caseAViser } from "./confusion.js";
 
 const CATEGORIES = [quetes, quetesDofus, sorts, panoplies, dofus, legendaires, succesDonjons, donjons, metiers, cartes, geoguessr, confusion, monstresPixel];
 
+// Clé stable d'une question pour les statistiques (ne dépend pas de la place de la question dans la banque) : empreinte de son contenu.
+const empreinte = s => {
+  let a = 0x811c9dc5, b = 0x9747b28c;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); a = Math.imul(a ^ c, 0x01000193) >>> 0; b = Math.imul(b ^ c, 0x85ebca6b) >>> 0; }
+  return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0');
+};
+
 export const QUESTIONS = CATEGORIES.flatMap((c, ci) =>
   c.items.map((it, i) => {
     const id = `c${ci}q${i}`;
-    if (Array.isArray(it)) { const [q, a, pts, temps, groupe] = it; return { id, type: "simple", cat: c.cat, q, a, pts, temps, groupe }; }
-    if (it.sprite) return { id, type: "pixel", cat: c.cat, q: it.q, a: it.nom, nom: it.nom, sprite: it.sprite, pts: it.pts, temps: it.temps };
-    if (it.scene) return { id, type: "clic", cat: c.cat, q: it.q, a: caseAViser(it.scene).join(","), pts: it.pts, temps: it.temps, scene: it.scene };
-    return { id, type: "multi", cat: c.cat, q: it.q, champs: it.champs.map(f => f[0]), a: it.champs.map(f => f[1]), pts: it.pts, temps: it.temps, img: it.img, coord: it.coord, classement: it.classement };
+    let o;
+    if (Array.isArray(it)) { const [q, a, pts, temps, groupe] = it; o = { id, type: "simple", cat: c.cat, q, a, pts, temps, groupe }; }
+    else if (it.sprite) o = { id, type: "pixel", cat: c.cat, q: it.q, a: it.nom, nom: it.nom, sprite: it.sprite, pts: it.pts, temps: it.temps };
+    else if (it.scene) o = { id, type: "clic", cat: c.cat, q: it.q, a: caseAViser(it.scene).join(","), pts: it.pts, temps: it.temps, scene: it.scene };
+    else o = { id, type: "multi", cat: c.cat, q: it.q, champs: it.champs.map(f => f[0]), a: it.champs.map(f => f[1]), pts: it.pts, temps: it.temps, img: it.img, coord: it.coord, classement: it.classement };
+    o.cle = empreinte([c.cat, o.q, [].concat(o.a).join('|'), o.img || o.sprite || (o.scene ? JSON.stringify(o.scene) : '')].join('#'));   // identifiant stable pour les statistiques
+    return o;
   }));
