@@ -75,7 +75,7 @@ def main():
         cle = (tuple(s["e"]), tuple(s["c"]), s["pv"])
         if cle not in vues:
             vues.add(cle); scenes.append(s)
-    items = [{"q": "Confusion horaire : clique sur la case à viser pour toucher le Comte Harebourg !",
+    items = [{"q": "Prends en compte la confusion horaire pour toucher le Comte Harebourg",
               "scene": s, "pts": PTS, "temps": TEMPS} for s in scenes]
     lignes = ["    " + json.dumps(i, ensure_ascii=False) + "," for i in items]
     (ROOT / "js/questions/confusion.js").write_text(
