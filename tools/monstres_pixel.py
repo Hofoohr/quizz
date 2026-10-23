@@ -93,9 +93,9 @@ def main():
     for nom, m in familles.values():
         prendre(nom, m)
     print(f"{len(monstres)} monstres, {len(valides)} valides, {sum(1 for _, m in choisis if m.get('isBoss'))} boss, {len(familles)} familles", file=sys.stderr)
-    random.Random(2026).shuffle(choisis)
+    choisis.sort(key=lambda t: t[1]["id"])   # ordre des identifiants : en cas d'image identique, c'est le monstre le plus ancien qui est gardé
     candidats = choisis
-    items = []
+    items, vus = [], {}
     for nom, m in candidats:
         fichier = IMG_DIR / nom_fichier(m["id"])
         if fichier.exists():
@@ -105,9 +105,18 @@ def main():
             ok = im is not None
             if ok:
                 im.save(fichier, optimize=True)
-        if ok:
-            items.append({"q": "Quel est ce monstre ? Tape son nom exact : l'image devient plus nette avec le temps, le plus rapide gagne le plus de points !",
-                          "nom": nom, "sprite": f"img/monstres/{fichier.name}", "pts": PTS, "temps": TEMPS})
+        if not ok:
+            continue
+        # Image identique à celle d'un autre monstre (variante qui réutilise le dessin du monstre de base) : question ambiguë, on la saute.
+        empreinte = hashlib.md5(fichier.read_bytes()).hexdigest()
+        if empreinte in vus:
+            print(f"  image identique : « {nom} » = « {vus[empreinte]} », ignoré", file=sys.stderr)
+            fichier.unlink()
+            continue
+        vus[empreinte] = nom
+        items.append({"q": "Quel est ce monstre ? Tape son nom exact : l'image devient plus nette avec le temps, le plus rapide gagne le plus de points !",
+                      "nom": nom, "sprite": f"img/monstres/{fichier.name}", "pts": PTS, "temps": TEMPS})
+    random.Random(2026).shuffle(items)
     lignes = ["    " + json.dumps(i, ensure_ascii=False) + "," for i in items]
     (ROOT / "js/questions/monstres-pixel.js").write_text(
         "// Fichier généré par tools/monstres_pixel.py : ne pas modifier à la main (relancer le script).\n"
