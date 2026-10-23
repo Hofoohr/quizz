@@ -69,7 +69,7 @@ export default {
     ["Quels sont les 4 monstres de la dernière salle du donjon « Cavernes du Kolosso » ?", "Kolosso, Professeur Xa, Blérom, Croleur", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Pyramide d'Ombre » ?", "Ombre, Caznoar, Sombléro, Noctulule", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Temple du dieu Kao » ?", "Prêtresse de Kao, Pralicienne, Torréfactueur, Chocoligarque", 3, 40],
-    ["Quels sont les 4 monstres de la dernière salle du donjon « Manoir des Katrepat » ?", "Anerice la Shushess, Goultime, Kérigoule, Houligane", 3, 40],
+    ["Quels sont les 4 monstres de la dernière salle du donjon « Manoir des Katrepat » ?", "Goultime, Gouligane, Kérigoule, Anerice la Shushess", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Tour de Bethel » ?", "Bethel Akarna, Zombruth, Crânonier, Tournoyé", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Vaisseau du Capitaine Meno » ?", "Capitaine Meno, Tilamproie, Mantaze, Gambaf", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Palais de Dantinéa » ?", "Dantinéa, Diondin, Rilur, Tryde", 3, 40],
