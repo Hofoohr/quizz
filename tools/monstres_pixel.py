@@ -25,7 +25,7 @@ IMG_DIR = ROOT / "img" / "monstres"
 API = "https://api.dofusdb.fr"
 PTS, TEMPS = 6, 30   # 30 s ; le plus rapide à trouver gagne le plus de points (6 pour le 1er)
 PAGE = 50
-SUPER_RACES_EXCLUES = {48}   # 48 = « Créatures des raids »
+SUPER_RACES_EXCLUES = {48, 24}   # 48 = « Créatures des raids », 24 = « Créatures de Nowel » (monstres des quêtes de Nowel)
 PAR_FAMILLE = 2     # monstres gardés par famille (hors boss)
 EXCLUS = {"Psychopathe"}   # monstres retirés à la demande (ils sont sautés : le suivant du tirage les remplace)
 
@@ -54,7 +54,7 @@ def tous_les_monstres():
 
 
 def races_exclues():
-    """Familles (races) à écarter : celles de la super-famille « Créatures des raids »."""
+    """Familles (races) à écarter : celles des super-familles « Créatures des raids » et « Créatures de Nowel »."""
     out, skip = set(), 0
     while True:
         r = get("monster-races", {"$limit": PAGE, "$skip": skip, "$select[]": ["id", "superRaceId"]})
