@@ -2,7 +2,7 @@
 """Génère la catégorie « Confusion horaire » (mini-jeu) : js/questions/confusion.js + les deux personnages dans img/confusion/.
 
 Usage : python3 tools/confusion_horaire.py
-Chaque question est une scène sur une grille isométrique de 15 × 15 cases : une Enutrof, le Comte Harebourg (à 11 cases au plus) et un % de vie.
+Chaque question est une scène sur une grille isométrique de 15 × 15 cases : une Enutrof, le Comte Harebourg (sans limite de distance) et un % de vie.
 Le % de vie donne la confusion, qui tourne la case visée autour du lanceur (100 à 75 % : 90° horaire, 75 à 25 % : 180°, 25 à 0 % : 270° horaire : voir js/confusion.js).
 L'Enutrof est au centre de la grille ; la case du Comte et la vie sont tirées au hasard ; la confusion doit rester possible (la case à cliquer est dans la grille).
 Le joueur doit cliquer la case qui, une fois tournée, tombe sur le Comte. La bonne case est recalculée par le site (js/confusion.js).
@@ -21,7 +21,6 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 N = 15                        # côté de la grille
 NB_SCENES = 200
-PORTEE_MAX = 11               # distance maximale (en cases, |dx| + |dy|) entre l'Enutrof et le Comte
 PTS, TEMPS = 6, 11   # question de rapidité : 3 s d'annonce + 8 s pour répondre ; le plus rapide gagne le plus de points (6 pour le 1er)
 COULEURS_ENUTROF = [13732958, 15851694, 3093806, 14325820, 7814953, 9995877]   # maleColors de la classe 3 (DofusDB)
 LOOK_ENUTROF = "{1|30,2044|%s|120}" % ",".join(f"{i + 1}={v}" for i, v in enumerate(COULEURS_ENUTROF))
@@ -52,7 +51,7 @@ def scene(rng):
         e = (N // 2, N // 2)                       # l'Enutrof est toujours au milieu de la grille
         c = (rng.randrange(N), rng.randrange(N))
         t = (c[0] - e[0], c[1] - e[1])
-        if t == (0, 0) or abs(t[0]) + abs(t[1]) > PORTEE_MAX:
+        if t == (0, 0):
             continue
         dx, dy = tourner(t, 4 - ROT[conf])
         v = (e[0] + dx, e[1] + dy)
