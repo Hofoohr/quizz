@@ -2,6 +2,7 @@ import { db, ref, get, set, update, onValue } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
 import { texteDistance, classement, lireCoord } from "./carte.js";
 import { creerMonde } from "./monde.js";
+import { classerParTemps } from "./devine.js";
 import { creerScene, caseAViser, lireCase, classementRapide, infosScene, lireScene, PLAGE_VIE, COULEURS } from "./confusion.js";
 
 const $ = id => document.getElementById(id);
@@ -18,9 +19,11 @@ const bankOf = q => QUESTIONS.find(x => x.id === q.id) || {};
 const isRank = q => !!(q && bankOf(q).classement);
 const sceneOf = q => lireScene(q.scene, bankOf(q).scene);
 const isClic = q => !!(q && sceneOf(q));
-const isAuto = q => isRank(q) || isClic(q);   // corrigées automatiquement, sans le chef
+const isPixel = q => !!(q && bankOf(q).sprite);
+const isAuto = q => isRank(q) || isClic(q) || isPixel(q);   // corrigées automatiquement, sans le chef
 const rapideOf = j => classementRapide(allAnswers[j], sceneOf(list[j]), Object.keys(players), list[j].pts);
-const pointsOf = (j, id) => isClic(list[j]) ? rapideOf(j)[id].points : rankOf(j)[id].points;
+const pixelOf = j => classerParTemps(allAnswers[j], Object.keys(players), list[j].pts);
+const pointsOf = (j, id) => isClic(list[j]) ? rapideOf(j)[id].points : isPixel(list[j]) ? pixelOf(j)[id].points : rankOf(j)[id].points;
 const rankOf = j => { const q = list[j]; return classement(allAnswers[j], bankOf(q).a[bankOf(q).coord], Object.keys(players), q.pts); };
 
 // Intitulés des champs d'une question à plusieurs champs (null pour une question simple).
@@ -77,6 +80,25 @@ function renderCorrection() {
     $('c-expected').innerHTML = fields.map((l, k) =>
       `<span class="exp-line">${esc(l)} : <b>${esc(expected && expected[k] != null ? expected[k] : '…')}</b></span>`).join('');
   } else $('c-expected').textContent = expected ?? '…';
+  $('c-sprite').hidden = !isPixel(q);
+  if (isPixel(q)) {
+    const bk = bankOf(q), res = pixelOf(index);
+    $('c-sprite').src = bk.sprite;
+    $('c-scenebox').hidden = true; $('c-mapbox').hidden = true;
+    document.body.classList.remove('large');
+    $('c-expected').innerHTML = `<b>${esc(bk.nom)}</b>`;
+    const ids = order().sort((a, b) => (res[a].rang ?? 1e9) - (res[b].rang ?? 1e9) || players[a].name.localeCompare(players[b].name));
+    $('c-list').innerHTML = ids.map(id => {
+      const r = res[id], medal = r.rang === null ? '❌' : ['🥇', '🥈', '🥉'][r.rang - 1] || r.rang + '.';
+      const t = r.ms === null ? "n'a pas trouvé" : `trouvé en ${String(Math.round(r.ms / 100) / 10).replace('.', ',')} s`;
+      return `<li class="row rank ${r.trouve ? 'ok' : 'ko'}"><div class="who"><b>${medal} ${esc(players[id].name)}${id === ctx.uid ? ' <small>(toi)</small>' : ''}</b><span>+${String(r.points).replace('.', ',')} pt${r.points >= 2 ? 's' : ''}</span></div>
+        <div class="ans">${r.trouve ? '⚡ ' : ''}${t}</div></li>`;
+    }).join('');
+    $('c-host').hidden = !ctx.isHost; $('c-wait').hidden = ctx.isHost;
+    $('c-prev').disabled = index === 0;
+    $('c-next').textContent = index === list.length - 1 ? 'Voir les résultats' : 'Question suivante →';
+    return;
+  }
   $('c-scenebox').hidden = !isClic(q);
   document.body.classList.toggle('large', isClic(q));
   if (isClic(q)) {

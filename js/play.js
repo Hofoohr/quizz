@@ -3,6 +3,7 @@ import { QUESTIONS } from "./questions.js";
 import { creerMonde } from "./monde.js";
 import { lireCoord } from "./carte.js";
 import { creerScene, infosScene, lireCase, lireTemps, lireScene } from "./confusion.js";
+import { estBonNom, lireTrouve, blocs, dessinerPixel, TAILLE_MAX } from "./devine.js";
 
 const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
 const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
@@ -35,6 +36,35 @@ function drawPin() {
 }
 const sceneOf = q => lireScene(q.scene, bankOf(q).scene);   // la scène publiée avec la question, sinon celle de la banque locale
 const isClic = q => !!sceneOf(q);
+// « Monstre pixelisé » : image qui se précise, nom exact à taper (essais illimités). On n'enregistre que la réussite : « ok@ms ».
+const isPixel = q => !!bankOf(q).sprite;
+let pixelImg = null, trouveMs = null, essais = 0;
+function essayer() {
+  if (cur === null || lockedFor === cur || trouveMs !== null || !isPixel(list[cur])) return;
+  const saisie = $('p-answer').value;
+  if (!saisie.trim()) return;
+  essais++;
+  if (estBonNom(bankOf(list[cur]).nom, saisie)) {
+    trouveMs = Math.max(0, Math.round(serverNow() - sched[cur].start));
+    $('p-answer').disabled = true; $('p-try').disabled = true;
+    majPixel();
+    saveNow(cur);
+  } else {
+    $('p-pixelmsg').className = 'hint bad'; $('p-pixelmsg').textContent = `❌ Ce n'est pas « ${saisie.trim()} » (essai ${essais}). Réessaie !`;
+    $('p-answer').select();
+  }
+}
+// Affiche le sprite : pixelisé selon le temps écoulé, net une fois trouvé (ou quand le temps est écoulé).
+function majPixel(now = serverNow()) {
+  if (cur === null || !pixelImg || !isPixel(list[cur])) return;
+  const duree = list[cur].temps * 1000, ms = now - sched[cur].start;
+  const fini = trouveMs !== null || lockedFor === cur;
+  dessinerPixel($('p-pixel'), pixelImg, fini ? TAILLE_MAX : blocs(ms, duree));
+  if (trouveMs !== null) { $('p-pixelmsg').className = 'hint good'; $('p-pixelmsg').textContent = `✅ Trouvé en ${String(Math.round(trouveMs / 100) / 10).replace('.', ',')} s : c'est « ${bankOf(list[cur]).nom} » !`; }
+}
+$('p-try').onclick = essayer;
+$('p-answer').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); essayer(); } });
+
 const RUSH_MS = 3000;   // question de rapidité : 3 s d'annonce avant d'afficher la confusion
 let sceneJeu = null, choix = null, choixMs = null, revealAt = 0, centre = false;
 function setChoix(x, y) {
@@ -52,6 +82,7 @@ function view(name) {
 
 // Réponse saisie : un texte, ou un objet {numéro du champ: texte} pour une question à plusieurs champs (null si vide).
 function readValue(i) {
+  if (isPixel(list[i])) return trouveMs !== null ? `ok@${trouveMs}` : null;
   if (isClic(list[i])) return choix ? choix.join(',') + '@' + (choixMs ?? 0) : null;
   if (isRank(list[i])) return pin ? { 0: `${pin.x}, ${pin.y}` } : null;
   if (!fieldsOf(list[i])) return $('p-answer').value.slice(0, 200) || null;
@@ -73,7 +104,7 @@ function saveNow(i) {
 function lockQuestion() {
   if (cur === null || lockedFor === cur) return;
   lockedFor = cur;
-  $('p-answer').disabled = true;
+  $('p-answer').disabled = true; $('p-try').disabled = true;
   inputs().forEach(el => { el.disabled = true; });
   saveNow(cur);
 }
@@ -94,7 +125,10 @@ function openQuestion(i) {
   const input = $('p-answer');
   input.hidden = !!fields; $('p-fields').hidden = !fields || rank;
   $('p-mapbox').hidden = !rank;
-  const clic = isClic(q);
+  const clic = isClic(q), pixel = isPixel(q);
+  $('p-pixelbox').hidden = !pixel; $('p-try').hidden = !pixel; $('p-try').disabled = false;
+  trouveMs = null; essais = 0; $('p-pixelmsg').className = 'hint'; $('p-pixelmsg').textContent = 'Tape le nom exact du monstre (majuscules et accents sans importance) : autant d\'essais que tu veux !';
+  if (pixel) { pixelImg = Object.assign(new Image(), { src: bankOf(q).sprite }); pixelImg.onload = () => majPixel(); majPixel(); }
   $('p-scenebox').hidden = true;   // affichée par tick() une fois l'annonce terminée
   $('p-rush').hidden = !clic;
   document.body.classList.toggle('large', clic);   // la grille est plus large que les autres écrans
@@ -117,7 +151,8 @@ function openQuestion(i) {
   get(ref(db, `rooms/${ctx.code}/answers/${i}/${ctx.uid}`)).then(s => {
     if (!s.exists() || cur !== i) return;
     const v = s.val();
-    if (clic) { const c = lireCase(v); if (c && !choix) { choix = c; choixMs = lireTemps(v) ?? 0; sceneJeu.dessiner({ choix }); } }
+    if (pixel) { const t = lireTrouve(v); if (t !== null && trouveMs === null) { trouveMs = t; $('p-answer').disabled = true; $('p-try').disabled = true; majPixel(); } }
+    else if (clic) { const c = lireCase(v); if (c && !choix) { choix = c; choixMs = lireTemps(v) ?? 0; sceneJeu.dessiner({ choix }); } }
     else if (rank) { const c = v && typeof v === 'object' ? lireCoord(v[0]) : null; if (c && !pin) { pin = { x: c[0], y: c[1] }; drawPin(); } }
     else if (fields) inputs().forEach((el, k) => { if (!el.value && typeof v === 'object' && v[k] != null) el.value = v[k]; });
     else if (!input.value && typeof v === 'string') input.value = v;
@@ -191,6 +226,7 @@ function tick() {
   }
   view('live');
   if (cur !== i) openQuestion(i);
+  majPixel(now);
   if (revealAt) {   // question de rapidité : annonce de 3 s, puis la scène apparaît
     const att = revealAt - now;
     $('p-rush').hidden = att <= 0; $('p-scenebox').hidden = att > 0;

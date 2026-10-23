@@ -9,6 +9,7 @@
 //   la correction affiche alors la distance entre la réponse de chaque joueur et les vraies coordonnées).
 // « classement: true » : pas de correction par le chef ; les joueurs sont classés selon la distance de leur réponse (champ « coord »), voir js/carte.js.
 // « scene » : mini-jeu « Confusion horaire » (js/confusion.js) : le joueur clique une case de la grille, corrigée automatiquement.
+// « sprite » + « nom » : « Monstre pixelisé » (js/devine.js) : image qui se précise, le joueur tape le nom exact, corrigé automatiquement.
 // Ne change pas l'ordre des lignes existantes : l'identifiant d'une question en dépend.
 // Banque publique : les réponses sont visibles par tous les visiteurs du site.
 import quetes from "./questions/quetes.js";
@@ -23,14 +24,16 @@ import metiers from "./questions/metiers.js";
 import cartes from "./questions/cartes.js";
 import geoguessr from "./questions/geoguessr.js";
 import confusion from "./questions/confusion.js";
+import monstresPixel from "./questions/monstres-pixel.js";
 import { caseAViser } from "./confusion.js";
 
-const CATEGORIES = [quetes, quetesDofus, sorts, panoplies, dofus, legendaires, succesDonjons, donjons, metiers, cartes, geoguessr, confusion];
+const CATEGORIES = [quetes, quetesDofus, sorts, panoplies, dofus, legendaires, succesDonjons, donjons, metiers, cartes, geoguessr, confusion, monstresPixel];
 
 export const QUESTIONS = CATEGORIES.flatMap((c, ci) =>
   c.items.map((it, i) => {
     const id = `c${ci}q${i}`;
     if (Array.isArray(it)) { const [q, a, pts, temps, groupe] = it; return { id, type: "simple", cat: c.cat, q, a, pts, temps, groupe }; }
+    if (it.sprite) return { id, type: "pixel", cat: c.cat, q: it.q, a: it.nom, nom: it.nom, sprite: it.sprite, pts: it.pts, temps: it.temps };
     if (it.scene) return { id, type: "clic", cat: c.cat, q: it.q, a: caseAViser(it.scene).join(","), pts: it.pts, temps: it.temps, scene: it.scene };
     return { id, type: "multi", cat: c.cat, q: it.q, champs: it.champs.map(f => f[0]), a: it.champs.map(f => f[1]), pts: it.pts, temps: it.temps, img: it.img, coord: it.coord, classement: it.classement };
   }));

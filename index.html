@@ -36,7 +36,7 @@
       </fieldset>
       <div id="quizz-opts">
         <label class="field">Nombre de questions
-          <select id="nb"><option>5</option><option selected>10</option><option>20</option><option>50</option><option>175</option></select>
+          <select id="nb"><option>5</option><option selected>10</option><option>20</option><option>50</option><option>185</option></select>
         </label>
         <fieldset><legend>Catégories</legend><div id="cats"></div></fieldset>
       </div>
@@ -65,7 +65,12 @@
       <div class="meta"><span id="p-cat"></span><span id="p-pts"></span></div>
       <h2 id="p-text"></h2>
       <img id="p-img" class="carte" alt="Carte à identifier" hidden>
+      <div id="p-pixelbox" hidden>
+        <canvas id="p-pixel" width="384" height="384" class="pixel"></canvas>
+        <p id="p-pixelmsg" class="hint"></p>
+      </div>
       <input id="p-answer" placeholder="Ta réponse…" autocomplete="off" maxlength="200">
+      <button id="p-try" class="btn" hidden>Proposer ce nom</button>
       <div id="p-fields" hidden></div>
       <div id="p-rush" class="rush" hidden><b>⚡ Question de rapidité</b><span>Confusion du Comte Harebourg</span><i id="p-rushcount"></i></div>
       <div id="p-scenebox" hidden>
@@ -101,6 +106,7 @@
       <div class="meta"><span id="c-cat"></span></div>
       <h2 id="c-text"></h2>
       <img id="c-img" class="carte" alt="Carte à identifier" hidden>
+      <img id="c-sprite" class="sprite" alt="Monstre à identifier" hidden>
       <div class="expected"><small>Réponse attendue</small><b id="c-expected"></b></div>
       <div id="c-scenebox" hidden><div id="c-conf"></div><p id="c-scenetxt" class="hint"></p><div class="scenewrap"><canvas id="c-scene" class="scene"></canvas></div></div>
       <div id="c-mapbox" hidden><p id="c-pile" class="pile" hidden></p><div id="c-map" class="monde"></div></div>

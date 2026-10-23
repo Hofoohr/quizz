@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Génère la catégorie « Monstre pixelisé » : un monstre tiré au hasard, à nommer le plus vite possible sur une image qui se précise.
+
+Usage : python3 tools/monstres_pixel.py
+Écrit : js/questions/monstres-pixel.js   et   img/monstres/*.png
+
+Les monstres viennent de DofusDB (api.dofusdb.fr) : on garde ceux qui ont un nom unique, sans « ? », et une image non vide.
+250 monstres sont tirés au hasard (graine fixe). Le nom du fichier image est un code (empreinte), pour ne pas révéler le nom.
+Les illustrations appartiennent à Ankama ; DofusDB en est la source.
+"""
+import hashlib
+import io
+import json
+import random
+import sys
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+from PIL import Image
+
+ROOT = Path(__file__).resolve().parent.parent
+IMG_DIR = ROOT / "img" / "monstres"
+API = "https://api.dofusdb.fr"
+NOMBRE = 250
+PTS, TEMPS = 6, 30   # 30 s ; le plus rapide à trouver gagne le plus de points (6 pour le 1er)
+PAGE = 50
+ID_MAX = 1300        # bestiaire classique : au-delà, ce sont surtout des variantes de donjons et d'événements
+
+
+def get(path, params):
+    url = f"{API}/{path}?{urllib.parse.urlencode(params, doseq=True, safe='[]$')}"
+    for n in range(4):
+        try:
+            with urllib.request.urlopen(url, timeout=60) as r:
+                time.sleep(0.15)
+                return json.load(r)
+        except OSError:
+            if n == 3:
+                raise
+            time.sleep(2 ** (n + 1))
+
+
+def tous_les_monstres():
+    out, skip = [], 0
+    while True:
+        r = get("monsters", {"$limit": PAGE, "$skip": skip, "$select[]": ["id", "name", "img", "gfxId", "race", "grades.level"]})
+        out += r["data"]
+        skip += len(r["data"])
+        if not r["data"] or skip >= r["total"]:
+            return out
+
+
+def nom_fichier(mid):
+    return hashlib.sha1(f"monstre-{mid}".encode()).hexdigest()[:10] + ".png"
+
+
+def telecharger(m):
+    """Renvoie l'image (RGBA, 128 px) ou None si elle est absente ou presque vide."""
+    try:
+        with urllib.request.urlopen(m["img"], timeout=60) as r:
+            im = Image.open(io.BytesIO(r.read())).convert("RGBA")
+    except OSError:
+        return None
+    time.sleep(0.1)
+    alpha = im.getchannel("A")
+    if sum(1 for p in alpha.tobytes() if p > 40) < 0.06 * im.width * im.height:   # presque rien de visible
+        return None
+    return im
+
+
+def main():
+    IMG_DIR.mkdir(parents=True, exist_ok=True)
+    monstres = tous_les_monstres()
+    par_nom = {}
+    for m in monstres:
+        nom = " ".join(((m.get("name") or {}).get("fr") or "").split())
+        if not nom or "?" in nom or not m.get("img") or not m.get("grades"):
+            continue
+        par_nom.setdefault(nom, []).append(m)
+    # un seul monstre par nom (le plus ancien) et seulement le bestiaire « classique » (identifiants < ID_MAX) : des monstres connus des joueurs
+    candidats = [(nom, min(ms, key=lambda m: m["id"])) for nom, ms in par_nom.items() if min(m["id"] for m in ms) < ID_MAX]
+    print(f"{len(monstres)} monstres, {len(candidats)} candidats", file=sys.stderr)
+    random.Random(2026).shuffle(candidats)
+    items = []
+    for nom, m in candidats:
+        if len(items) >= NOMBRE:
+            break
+        fichier = IMG_DIR / nom_fichier(m["id"])
+        if fichier.exists():
+            ok = True
+        else:
+            im = telecharger(m)
+            ok = im is not None
+            if ok:
+                im.save(fichier, optimize=True)
+        if ok:
+            items.append({"q": "Quel est ce monstre ? Tape son nom exact : l'image devient plus nette avec le temps, le plus rapide gagne le plus de points !",
+                          "nom": nom, "sprite": f"img/monstres/{fichier.name}", "pts": PTS, "temps": TEMPS})
+    lignes = ["    " + json.dumps(i, ensure_ascii=False) + "," for i in items]
+    (ROOT / "js/questions/monstres-pixel.js").write_text(
+        "// Fichier généré par tools/monstres_pixel.py : ne pas modifier à la main (relancer le script).\n"
+        "// Un monstre au hasard : image très pixelisée qui se précise ; il faut taper son nom exact, le plus vite possible (voir js/devine.js).\n"
+        'export default {\n  cat: "Monstre pixelisé",\n  items: [\n' + "\n".join(lignes) + "\n  ],\n};\n", encoding="utf-8")
+    print(f"{len(items)} monstres écrits", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
