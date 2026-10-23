@@ -49,6 +49,8 @@ function essayer() {
     $('p-answer').disabled = true; $('p-try').disabled = true;
     majPixel();
     saveNow(cur);
+    // Trouvé : on se met automatiquement « prêt ». Quand tout le monde est prêt (donc a trouvé), la question suivante arrive toute seule.
+    set(ref(db, `rooms/${ctx.code}/ready/${cur}/${ctx.uid}`), true).catch(console.error);
   } else {
     $('p-pixelmsg').className = 'hint bad'; $('p-pixelmsg').textContent = `❌ Ce n'est pas « ${saisie.trim()} » (essai ${essais}). Réessaie !`;
     $('p-answer').select();
