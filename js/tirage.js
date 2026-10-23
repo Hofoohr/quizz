@@ -29,7 +29,7 @@ export function melange(questions) {
 // a 70 % de chances d'avoir 1 question, sinon 0 (la partie compte toujours n questions au total).
 // Une catégorie absente de cette liste prend le poids POIDS_PAR_DEFAUT.
 export const POIDS = {
-  'Sort de classe': 10, 'Panoplie': 20, 'Items': 5, 'Légendaire': 10, 'Succès': 20,
+  'Sort de classe': 5, 'Panoplie': 20, 'Items': 5, 'Légendaire': 10, 'Succès': 20,
   'Quêtes': 20, 'Donjons': 20, 'Métiers': 20, 'Cartes': 20, 'GeoGuessr (no move)': 20, 'Confusion horaire': 10, 'Monstre pixelisé': 10,
 };
 export const POIDS_PAR_DEFAUT = 10;
