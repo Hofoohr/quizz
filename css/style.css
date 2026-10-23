@@ -86,7 +86,9 @@ fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 1.2rem}
 .conf .rot{margin:0;font-size:1.15rem;font-weight:700}
 .rush{display:flex;flex-direction:column;align-items:center;gap:.4rem;margin:1rem 0;padding:1.4rem 1rem;border:2px solid var(--accent);border-radius:12px;background:rgba(124,92,255,.12);text-align:center}
 .rush b{font-size:1.4rem} .rush span{color:var(--muted)} .rush i{font-style:normal;font-size:3rem;font-weight:800;color:var(--accent)}
-.scene{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#7d8a52;margin:.5rem 0;cursor:pointer}
+.scenewrap{overflow-x:auto;margin:.5rem 0}
+.scene{display:block;width:885px;max-width:none;height:auto;border:1px solid var(--line);border-radius:8px;background:#7d8a52;cursor:pointer}   /* 885 px = 1,5 fois la taille d'avant (590 px) */
+body.large #app{max-width:980px}
 .row.multi{display:block}
 .row.multi .who{display:flex;justify-content:space-between;margin-bottom:.5rem}
 .sub{display:grid;grid-template-columns:130px 1fr auto;gap:.6rem;align-items:center;padding:.4rem .5rem;margin-top:.3rem;border:1px solid var(--line);border-radius:6px}

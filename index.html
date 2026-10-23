@@ -71,7 +71,7 @@
       <div id="p-scenebox" hidden>
         <p class="hint">Ta confusion dévie ton sort (ta confusion et ta vie sont indiquées ci-dessous) : clique la case à viser pour toucher le Comte Harebourg. <b>Le plus rapide gagne le plus de points !</b> Ton dernier clic est retenu.</p>
         <div id="p-conf"></div>
-        <canvas id="p-scene" class="scene"></canvas>
+        <div class="scenewrap"><canvas id="p-scene" class="scene"></canvas></div>
       </div>
       <div id="p-mapbox" hidden>
         <div class="zoombar"><small id="p-maphint">Clique sur la carte du monde pour placer ton repère (x vers l'est, y vers le sud). <b>Le plus proche gagne les points !</b></small><small id="p-hover"></small></div>
@@ -102,7 +102,7 @@
       <h2 id="c-text"></h2>
       <img id="c-img" class="carte" alt="Carte à identifier" hidden>
       <div class="expected"><small>Réponse attendue</small><b id="c-expected"></b></div>
-      <div id="c-scenebox" hidden><div id="c-conf"></div><p id="c-scenetxt" class="hint"></p><canvas id="c-scene" class="scene"></canvas></div>
+      <div id="c-scenebox" hidden><div id="c-conf"></div><p id="c-scenetxt" class="hint"></p><div class="scenewrap"><canvas id="c-scene" class="scene"></canvas></div></div>
       <div id="c-mapbox" hidden><p id="c-pile" class="pile" hidden></p><div id="c-map" class="monde"></div></div>
       <ul id="c-list"></ul>
       <div id="c-host" class="btns" hidden>

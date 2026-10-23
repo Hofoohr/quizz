@@ -35,7 +35,7 @@ function drawPin() {
 }
 const isClic = q => !!bankOf(q).scene;
 const RUSH_MS = 3000;   // question de rapidité : 3 s d'annonce avant d'afficher la confusion
-let sceneJeu = null, choix = null, choixMs = null, revealAt = 0;
+let sceneJeu = null, choix = null, choixMs = null, revealAt = 0, centre = false;
 function setChoix(x, y) {
   if (cur === null || lockedFor === cur || !isClic(list[cur])) return;
   if (serverNow() < revealAt) return;   // la confusion n'est pas encore affichée
@@ -96,7 +96,8 @@ function openQuestion(i) {
   const clic = isClic(q);
   $('p-scenebox').hidden = true;   // affichée par tick() une fois l'annonce terminée
   $('p-rush').hidden = !clic;
-  choix = null; choixMs = null; revealAt = clic ? sched[i].start + RUSH_MS : 0;
+  document.body.classList.toggle('large', clic);   // la grille est plus large que les autres écrans
+  centre = false; choix = null; choixMs = null; revealAt = clic ? sched[i].start + RUSH_MS : 0;
   if (clic) $('p-conf').innerHTML = infosScene(bankOf(q).scene);
   if (clic) sceneJeu = creerScene($('p-scene'), bankOf(q).scene, { surClic: setChoix });
   pin = null;
@@ -193,6 +194,7 @@ function tick() {
     const att = revealAt - now;
     $('p-rush').hidden = att <= 0; $('p-scenebox').hidden = att > 0;
     $('p-rushcount').textContent = Math.max(1, Math.ceil(att / 1000));
+    if (att <= 0 && !centre) { centre = true; const w = $('p-scene').parentElement; w.scrollLeft = (w.scrollWidth - w.clientWidth) / 2; }   // petit écran : on centre la grille
   }
   $('p-skip').hidden = !ctx.isHost;
   $('p-skip').disabled = skips[i] != null;
@@ -232,6 +234,7 @@ export async function enter(c) {
 
 export function stop() {
   running = false;
+  document.body.classList.remove('large');
   if (offSkips) { offSkips(); offSkips = null; }
   if (offReady) { offReady(); offReady = null; }
   if (offPlayers) { offPlayers(); offPlayers = null; }

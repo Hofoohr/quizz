@@ -77,6 +77,7 @@ function renderCorrection() {
       `<span class="exp-line">${esc(l)} : <b>${esc(expected && expected[k] != null ? expected[k] : '…')}</b></span>`).join('');
   } else $('c-expected').textContent = expected ?? '…';
   $('c-scenebox').hidden = !isClic(q);
+  document.body.classList.toggle('large', isClic(q));
   if (isClic(q)) {
     const bk = bankOf(q), sc = bk.scene, res = rapideOf(index), v = caseAViser(sc), cl = COULEURS[sc.conf];
     $('c-mapbox').hidden = true;
@@ -172,6 +173,7 @@ function renderCorrection() {
 }
 
 function renderResults() {
+  document.body.classList.remove('large');
   const max = list.reduce((s, q) => s + q.pts, 0);
   const rows = Object.keys(players).map(id => {
     let score = 0;
@@ -241,7 +243,8 @@ export async function enter(c) {
 }
 
 export function stop() {
-  running = false; initing = false;
+  running = false;
+  document.body.classList.remove('large'); initing = false;
   offs.forEach(u => u()); offQ.forEach(u => u());
   offs = []; offQ = [];
   list = []; players = {}; verdicts = {}; allAnswers = {}; answers = {}; expected = null; index = null; ctx = null;
