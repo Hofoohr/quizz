@@ -34,7 +34,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 JOL = "https://dofus.jeuxonline.info"
 DOFUSDB = "https://api.dofusdb.fr"
-PTS, TEMPS = 3, 60
+PTS, TEMPS = 5, 60
 NB_MONSTRES = 4      # taille du groupe rencontré en combat
 TAILLE_TABLEAU = 8   # entrées par salle dans les articles jeuxonline : 2 groupes de 4
 NOM_MAX = 40         # au-delà, ce n'est pas un nom de monstre (texte parasite de la page)

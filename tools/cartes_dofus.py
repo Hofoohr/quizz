@@ -38,7 +38,7 @@ API = "https://api.dofusdb.fr"
 MONDE_PRINCIPAL = 1
 PAGE = 50
 LARGEUR, QUALITE, ROGNE = 640, 70, 0.075    # taille finale, compression JPEG, part rognée en bas (filigrane)
-PTS, TEMPS = 6, 60                          # 3 champs : 2 points par champ juste
+PTS, TEMPS = 5, 60                          # 3 champs : 1/3 des points par champ (les coordonnées sont classées par distance)
 INCONNU = "Inconnu"
 
 

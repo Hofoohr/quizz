@@ -30,7 +30,7 @@ PAGE = 50
 # Catégories de succès : donjons par tranche de niveau, puis îles événementielles (Nowel, Pwâk, Halouine).
 CATEGORIES_DONJONS = [11, 12, 13, 14, 59, 23, 89, 68]
 GENERIQUES = {"Duo", "Trio", "Quatuor", "Chrono"}   # présents dans (presque) tous les donjons : pas des succès « propres »
-PTS, TEMPS = 3, 30
+PTS, TEMPS = 5, 30
 
 
 def get(path, params):

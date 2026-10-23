@@ -23,7 +23,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 IMG_DIR = ROOT / "img" / "monstres"
 API = "https://api.dofusdb.fr"
-PTS, TEMPS = 6, 30   # 30 s ; le plus rapide à trouver gagne le plus de points (6 pour le 1er)
+PTS, TEMPS = 5, 30   # 30 s ; le plus rapide à trouver gagne le plus de points (5 pour le 1er)
 PAGE = 50
 SUPER_RACES_EXCLUES = {48, 24, 15}   # 48 = « Créatures des raids », 24 = « Créatures de Nowel », 15 = « Protecteurs des ressources »
 PREFIXE_RACES_EXCLUES = "Invocations de classe"   # familles « Invocations de classe Osamodas », « … Sacrieur », etc.

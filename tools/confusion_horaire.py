@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 N = 15                        # côté de la grille
 NB_SCENES = 200
 CENTRE_MIN, CENTRE_MAX = (N - 9) // 2, (N - 9) // 2 + 8   # carré central de 9 × 9 : cases 3 à 11
-PTS, TEMPS = 6, 11   # question de rapidité : 3 s d'annonce + 8 s pour répondre ; le plus rapide gagne le plus de points (6 pour le 1er)
+PTS, TEMPS = 5, 11   # question de rapidité : 3 s d'annonce + 8 s pour répondre ; le plus rapide gagne le plus de points (5 pour le 1er)
 COULEURS_ENUTROF = [13732958, 15851694, 3093806, 14325820, 7814953, 9995877]   # maleColors de la classe 3 (DofusDB)
 LOOK_ENUTROF = "{1|30,2044|%s|120}" % ",".join(f"{i + 1}={v}" for i, v in enumerate(COULEURS_ENUTROF))
 SOURCES = {"comte.png": "https://api.dofusdb.fr/img/monsters/993.png",

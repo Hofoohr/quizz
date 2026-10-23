@@ -30,7 +30,7 @@ PAGE = 50
 # identifiant du métier dans DofusDB -> (« le bûcheron », « de bûcheron ») pour accorder correctement les phrases
 METIERS = {2: ("le bûcheron", "de bûcheron"), 24: ("le mineur", "de mineur"),
            26: ("l'alchimiste", "d'alchimiste"), 28: ("le paysan", "de paysan")}
-PTS, TEMPS = 2, 25          # une seule ressource à trouver
+PTS, TEMPS = 3, 25          # une seule ressource à trouver
 PTS_MULTI, TEMPS_MULTI = 3, 35   # plusieurs ressources à trouver
 # Familles fabriquées : (compétence DofusDB, type d'objet, nom, « quel/quelle … », sujet, complément, article)
 FABRICATIONS = [
