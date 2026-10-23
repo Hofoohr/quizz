@@ -2,7 +2,7 @@ import { db, signIn, ref, get, set, update, remove, onValue, onDisconnect, serve
 import { QUESTIONS } from "./questions.js";
 import * as Play from "./play.js";
 import * as Corr from "./correction.js";
-import { melange, composer } from "./tirage.js";
+import { composer } from "./tirage.js";
 import * as Geo from "./geo.js";
 import * as Chat from "./chat.js";
 import * as Salons from "./salons.js";
@@ -179,11 +179,7 @@ async function startGame() {
   if (!chosen.length) { showError('Choisis au moins une catégorie.'); return; }
   const bank = QUESTIONS.filter(q => chosen.includes(q.cat));
   const n = +$('nb').value;
-  const deck = composer(bank, n);   // répartition entre les catégories (poids dans js/tirage.js), puis tirage au hasard dans chacune
-  // La première question est toujours une question à plusieurs champs, s'il y en a dans les catégories choisies.
-  const m = deck.findIndex(q => q.champs);
-  if (m > 0) deck.unshift(...deck.splice(m, 1));
-  else if (m === -1) { const extra = melange(bank).find(q => q.champs && !deck.includes(q)); if (extra) { deck.unshift(extra); deck.splice(n); } }
+  const deck = composer(bank, n);   // répartition entre les catégories (poids dans js/tirage.js), tirage au hasard dans chacune, puis ordre aléatoire (la 1re question aussi)
   Salons.unpublish(code);   // la partie commence : le salon n'est plus dans la liste
   // On publie les questions SANS la réponse attendue.
   const qs = {};
