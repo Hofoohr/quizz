@@ -21,6 +21,10 @@ const sceneOf = q => lireScene(q.scene, bankOf(q).scene);
 const isClic = q => !!(q && sceneOf(q));
 const isPixel = q => !!(q && bankOf(q).sprite);
 const isAuto = q => isRank(q) || isClic(q) || isPixel(q);   // corrigées automatiquement, sans le chef
+// Questions « carte » (sous-zone, point d'intérêt, coordonnées) : le chef corrige la sous-zone et le point d'intérêt ; les coordonnées sont
+// classées automatiquement par distance (le plus proche gagne le plus de points). autoChamp : numéro de ce champ, ou -1.
+const autoChamp = q => (q && q.champs && !isRank(q) && bankOf(q).coord != null ? bankOf(q).coord : -1);
+const coordRank = j => { const q = list[j], bk = bankOf(q), k = bk.coord; return classement(allAnswers[j], bk.a[k], Object.keys(players), q.pts / fieldsOf(q).length, k); };
 const rapideOf = j => classementRapide(allAnswers[j], sceneOf(list[j]), Object.keys(players), list[j].pts);
 const pixelOf = j => classerParTemps(allAnswers[j], Object.keys(players), list[j].pts);
 const pointsOf = (j, id) => isClic(list[j]) ? rapideOf(j)[id].points : isPixel(list[j]) ? pixelOf(j)[id].points : rankOf(j)[id].points;
@@ -33,7 +37,8 @@ const result = (q, v) => {
   const f = fieldsOf(q);
   if (!f) return v === true ? 1 : v === false ? 0 : null;
   const o = v && typeof v === 'object' ? v : {};
-  return f.every((_, k) => o[k] === true || o[k] === false) ? f.filter((_, k) => o[k] === true).length : null;
+  const auto = autoChamp(q);   // champ corrigé automatiquement (distance) : pas de verdict du chef, il n'est pas compté ici
+  return f.every((_, k) => k === auto || o[k] === true || o[k] === false) ? f.filter((_, k) => k !== auto && o[k] === true).length : null;
 };
 
 const path = p => ref(db, `rooms/${ctx.code}/${p}`);
@@ -169,7 +174,10 @@ function renderCorrection() {
       const got = result(q, v[id]);
       const subs = fields.map((label, k) => {
         const val = mine[k];
-        const verdict = ctx.isHost
+        const cr = k === autoChamp(q) ? coordRank(index)[id] : null;   // champ « coordonnées » : rang et points calculés automatiquement
+        const verdict = cr
+          ? `<span class="badge">${cr.rang === null ? '❌' : ['🥇', '🥈', '🥉'][cr.rang - 1] || cr.rang + '.'} +${String(cr.points).replace('.', ',')} pt${cr.points >= 2 ? 's' : ''}</span>`
+          : ctx.isHost
           ? `<button class="v${val === true ? ' on' : ''}" data-id="${id}" data-k="${k}" data-val="1">✅</button><button class="v${val === false ? ' on' : ''}" data-id="${id}" data-k="${k}" data-val="0">❌</button>`
           : `<span class="badge">${val === true ? '✅' : val === false ? '❌' : '…'}</span>`;
         let t = a && typeof a === 'object' && a[k] != null ? esc(a[k]) : '<i>(pas de réponse)</i>';
@@ -177,9 +185,10 @@ function renderCorrection() {
           const d = texteDistance(a && typeof a === 'object' ? a[k] : null, expected[k]);
           if (d) t += `<small class="dist">${esc(d)}</small>`;
         }
-        return `<div class="sub ${val === true ? 'ok' : val === false ? 'ko' : ''}"><span class="lbl">${esc(label)}</span><span class="ans">${t}</span><span class="verdict">${verdict}</span></div>`;
+        const etat = cr ? (cr.points > 0 ? 'ok' : 'ko') : val === true ? 'ok' : val === false ? 'ko' : '';
+        return `<div class="sub ${etat}"><span class="lbl">${esc(label)}</span><span class="ans">${t}</span><span class="verdict">${verdict}</span></div>`;
       }).join('');
-      return `<li class="row multi"><div class="who"><b>${esc(players[id].name)}</b>${id === ctx.uid ? ' <small>(toi)</small>' : ''}${got === null ? '' : `<span>${got} / ${fields.length}</span>`}</div>${subs}</li>`;
+      return `<li class="row multi"><div class="who"><b>${esc(players[id].name)}</b>${id === ctx.uid ? ' <small>(toi)</small>' : ''}${got === null ? '' : `<span>${got} / ${fields.length - (autoChamp(q) >= 0 ? 1 : 0)}</span>`}</div>${subs}</li>`;
     }
     const val = v[id];
     const verdict = ctx.isHost
@@ -209,14 +218,15 @@ async function enregistrerStats() {
       const bk = bankOf(q);
       if (!bk.cle) return null;
       let n = 0, ok = 0;
+      if (isAuto(q) || autoChamp(q) >= 0) allAnswers[j] = (await get(path(`answers/${j}`))).val() || {};
       if (isAuto(q)) {
-        allAnswers[j] = (await get(path(`answers/${j}`))).val() || {};
         if (isRank(q)) { const r = rankOf(j); ids.forEach(id => { n++; ok += r[id].d === 0 ? 1 : 0; }); }   // GeoGuessr : réussi = pile sur la bonne carte
         else if (isClic(q)) { const r = rapideOf(j); ids.forEach(id => { n++; ok += r[id].juste ? 1 : 0; }); }
         else { const r = pixelOf(j); ids.forEach(id => { n++; ok += r[id].trouve ? 1 : 0; }); }
       } else {
         const nb = fieldsOf(q) ? fieldsOf(q).length : 1;
-        ids.forEach(id => { const r = result(q, (verr[j] || {})[id]); if (r === null) return; n++; ok += r === nb ? 1 : 0; });   // pas de verdict du chef : non compté
+        const ac = autoChamp(q) >= 0, cr = ac ? coordRank(j) : null;   // « carte » : réussi = champs du chef justes ET coordonnées exactes
+        ids.forEach(id => { const r = result(q, (verr[j] || {})[id]); if (r === null) return; n++; ok += r === nb - (ac ? 1 : 0) && (!ac || cr[id].d === 0) ? 1 : 0; });   // pas de verdict du chef : non compté
       }
       return n ? { cle: bk.cle, n, ok } : null;
     }));
@@ -238,6 +248,7 @@ function renderResults() {
       if (isAuto(q)) { score += pointsOf(j, id); return; }
       const n = fieldsOf(q) ? fieldsOf(q).length : 1;
       score += q.pts * (result(q, (verdicts[j] || {})[id]) || 0) / n;   // plusieurs champs : points au prorata des champs justes
+      if (autoChamp(q) >= 0) score += coordRank(j)[id].points;           // + points de la distance (champ « coordonnées »)
     });
     return { id, name: players[id].name, score: Math.round(score * 10) / 10 };
   }).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
@@ -287,7 +298,7 @@ export async function enter(c) {
     const snap = await get(path('questions'));
     const v = snap.val() || [];
     list = Array.isArray(v) ? v : Object.values(v);
-    list.forEach((q, j) => { if (isAuto(q)) offs.push(onValue(path(`answers/${j}`), s => { allAnswers[j] = s.val() || {}; render(); })); });
+    list.forEach((q, j) => { if (isAuto(q) || autoChamp(q) >= 0) offs.push(onValue(path(`answers/${j}`), s => { allAnswers[j] = s.val() || {}; render(); })); });
     offs.push(onValue(path('players'), s => { players = s.val() || {}; render(); }));
     offs.push(onValue(path('verdicts'), s => { verdicts = s.val() || {}; render(); }));
     offs.push(onValue(path('correction/index'), s => {

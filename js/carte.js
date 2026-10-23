@@ -30,12 +30,12 @@ export function texteDistance(reponse, attendu) {
 // reponses = { idJoueur: réponse }, joueurs = liste des identifiants. Rang ex æquo = meilleur rang du groupe.
 // Points = pts × (n − rang + 1) / n, n = nombre de joueurs ; pas de réponse lisible = 0 point.
 // Retourne { idJoueur: { d (distance ou null), rang (ou null), points } }.
-export function classement(reponses, attendu, joueurs, pts) {
+export function classement(reponses, attendu, joueurs, pts, champ = 0) {
   const n = joueurs.length;
   const dist = {};
   joueurs.forEach(id => {
     const r = reponses && reponses[id];
-    dist[id] = distance(r && typeof r === 'object' ? r[0] : r, attendu);
+    dist[id] = distance(r && typeof r === 'object' ? r[champ] : r, attendu);
   });
   const out = {};
   joueurs.forEach(id => {

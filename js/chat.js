@@ -7,10 +7,13 @@ const MAX_SHOWN = 100, MAX_LEN = 200, COOLDOWN_MS = 800;
 
 let ctx = null, off = null, msgs = [], open = false, seen = 0, lastSent = 0;
 
+// Heure du message (celle du serveur, affichée dans le fuseau du joueur) : « 14:32 ».
+const heure = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); };
+
 function render() {
   const box = $('chat-msgs');
   const stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
-  box.innerHTML = msgs.map(m => `<div class="msg${m.uid === ctx.uid ? ' mine' : ''}"><b>${esc(m.name)}</b> ${esc(m.text)}</div>`).join('')
+  box.innerHTML = msgs.map(m => `<div class="msg${m.uid === ctx.uid ? ' mine' : ''}"><small class="heure">${heure(m.at)}</small> <b>${esc(m.name)}</b> ${esc(m.text)}</div>`).join('')
     || '<p class="hint">Aucun message pour l\'instant.</p>';
   if (stick || open) box.scrollTop = box.scrollHeight;
   if (open) seen = msgs.length;
