@@ -2,6 +2,17 @@
   "rules": {
     ".read": false,
     ".write": false,
+    // Salons ouverts : inscrits par leur chef (et seulement lui) tant que la partie n'a pas commencé.
+    "publicRooms": {
+      ".read": "auth != null",
+      "$code": {
+        ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+        ".validate": "newData.hasChildren(['host', 'at'])",
+        "host": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" },
+        "at": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
     "rooms": {
       "$code": {
         "$other": { ".validate": false },
@@ -15,6 +26,8 @@
           "phase": { ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'questions' || newData.val() === 'geo' || newData.val() === 'correction' || newData.val() === 'results')" },
           // Jeu choisi par le chef : seul le GeoGuessr est marqué (absent = quizz).
           "game": { ".validate": "newData.isString() && (newData.val() === 'quizz' || newData.val() === 'geo')" },
+          // Salon visible dans la liste des salons ouverts (publicRooms).
+          "public": { ".validate": "newData.isBoolean()" },
           "startAt": { ".validate": "newData.isNumber()" },
           "$other": { ".validate": false }
         },
