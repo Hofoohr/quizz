@@ -2,7 +2,7 @@ import { db, ref, get, set, update, onValue, serverNow, serverTimestamp, clockRe
 import { QUESTIONS } from "./questions.js";
 import { creerMonde } from "./monde.js";
 import { lireCoord } from "./carte.js";
-import { creerScene, infosScene, lireCase, lireTemps } from "./confusion.js";
+import { creerScene, infosScene, lireCase, lireTemps, lireScene } from "./confusion.js";
 
 const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
 const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
@@ -33,7 +33,8 @@ function drawPin() {
   if (monde) monde.afficher(pin ? [{ ...pin, cls: 'me', label: '📍' }] : []);
   $('p-pos').textContent = pin ? `Ton repère : ${pin.x}, ${pin.y}` : 'Pas encore de repère : clique sur la carte.';
 }
-const isClic = q => !!bankOf(q).scene;
+const sceneOf = q => lireScene(q.scene, bankOf(q).scene);   // la scène publiée avec la question, sinon celle de la banque locale
+const isClic = q => !!sceneOf(q);
 const RUSH_MS = 3000;   // question de rapidité : 3 s d'annonce avant d'afficher la confusion
 let sceneJeu = null, choix = null, choixMs = null, revealAt = 0, centre = false;
 function setChoix(x, y) {
@@ -98,8 +99,8 @@ function openQuestion(i) {
   $('p-rush').hidden = !clic;
   document.body.classList.toggle('large', clic);   // la grille est plus large que les autres écrans
   centre = false; choix = null; choixMs = null; revealAt = clic ? sched[i].start + RUSH_MS : 0;
-  if (clic) $('p-conf').innerHTML = infosScene(bankOf(q).scene);
-  if (clic) sceneJeu = creerScene($('p-scene'), bankOf(q).scene, { surClic: setChoix });
+  if (clic) $('p-conf').innerHTML = infosScene(sceneOf(q));
+  if (clic) sceneJeu = creerScene($('p-scene'), sceneOf(q), { surClic: setChoix });
   pin = null;
   if (rank) {
     if (!monde) monde = creerMonde($('p-map'), { surClic: setPin, surSurvol: (x, y) => { $('p-hover').textContent = `x ${x}, y ${y}`; } });

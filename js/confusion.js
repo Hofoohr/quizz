@@ -22,6 +22,14 @@ export const infosScene = scene => `<div class="conf">
   <div class="pv"><span>❤️ Vie de l'Enutrof : <b>${scene.pv} %</b></span><i style="width:${scene.pv}%"></i></div>
   <p class="rot">${AFFICHAGE[scene.conf][scene.aff % AFFICHAGE[scene.conf].length]}</p></div>`;
 
+// Scène publiée dans la base avec la question (tous les joueurs voient exactement la même, même si leur copie du site est plus ancienne).
+// Firebase rend les listes sous forme de tableaux ou d'objets : on remet la scène en forme. « repli » : scène de la banque locale.
+export function lireScene(pub, repli) {
+  if (!pub) return repli || null;
+  const liste = v => (Array.isArray(v) ? v : Object.values(v || {})).map(Number);
+  return { n: +pub.n, e: liste(pub.e), c: liste(pub.c), conf: pub.conf, pv: +pub.pv, aff: +pub.aff };
+}
+
 // Un quart de tour dans le sens horaire (à l'écran) d'un décalage (dx, dy), répété k fois.
 export function tourner([dx, dy], k) {
   for (let i = 0; i < ((k % 4) + 4) % 4; i++) [dx, dy] = [-dy, dx];

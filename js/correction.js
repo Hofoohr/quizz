@@ -2,7 +2,7 @@ import { db, ref, get, set, update, onValue } from "./firebase.js";
 import { QUESTIONS } from "./questions.js";
 import { texteDistance, classement, lireCoord } from "./carte.js";
 import { creerMonde } from "./monde.js";
-import { creerScene, caseAViser, lireCase, classementRapide, infosScene, PLAGE_VIE, COULEURS } from "./confusion.js";
+import { creerScene, caseAViser, lireCase, classementRapide, infosScene, lireScene, PLAGE_VIE, COULEURS } from "./confusion.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -16,9 +16,10 @@ let allAnswers = {};   // réponses des questions « classement » (corrigées a
 // Question « classement » (GeoGuessr) : la bonne réponse vient de la banque locale, les points de la distance.
 const bankOf = q => QUESTIONS.find(x => x.id === q.id) || {};
 const isRank = q => !!(q && bankOf(q).classement);
-const isClic = q => !!(q && bankOf(q).scene);
+const sceneOf = q => lireScene(q.scene, bankOf(q).scene);
+const isClic = q => !!(q && sceneOf(q));
 const isAuto = q => isRank(q) || isClic(q);   // corrigées automatiquement, sans le chef
-const rapideOf = j => classementRapide(allAnswers[j], bankOf(list[j]).scene, Object.keys(players), list[j].pts);
+const rapideOf = j => classementRapide(allAnswers[j], sceneOf(list[j]), Object.keys(players), list[j].pts);
 const pointsOf = (j, id) => isClic(list[j]) ? rapideOf(j)[id].points : rankOf(j)[id].points;
 const rankOf = j => { const q = list[j]; return classement(allAnswers[j], bankOf(q).a[bankOf(q).coord], Object.keys(players), q.pts); };
 
@@ -79,7 +80,7 @@ function renderCorrection() {
   $('c-scenebox').hidden = !isClic(q);
   document.body.classList.toggle('large', isClic(q));
   if (isClic(q)) {
-    const bk = bankOf(q), sc = bk.scene, res = rapideOf(index), v = caseAViser(sc), cl = COULEURS[sc.conf];
+    const sc = sceneOf(q), res = rapideOf(index), v = caseAViser(sc), cl = COULEURS[sc.conf];
     $('c-mapbox').hidden = true;
     $('c-conf').innerHTML = infosScene(sc);
     $('c-expected').innerHTML = `<span class="exp-line">Vie ${sc.pv} % (${PLAGE_VIE[sc.conf]}) → rotation de ${esc(cl.angle)} autour de l'Enutrof</span>`;

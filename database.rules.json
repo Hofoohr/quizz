@@ -42,6 +42,16 @@
             "temps": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300" },
             // Questions à plusieurs champs : seuls les intitulés sont publiés, jamais les réponses.
             "champs": { "$k": { ".validate": "newData.isString() && newData.val().length <= 100" } },
+            // Mini-jeu « Confusion horaire » : la scène (positions, vie, écriture de la confusion), identique pour tous les joueurs.
+            "scene": {
+              "n": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 25" },
+              "e": { "$k": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 24" } },
+              "c": { "$k": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 24" } },
+              "conf": { ".validate": "newData.isString() && newData.val().length <= 10" },
+              "pv": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+              "aff": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" },
+              "$other": { ".validate": false }
+            },
             // Pas de champ "a" : la réponse attendue n'est jamais publiée ici.
             "$other": { ".validate": false }
           }

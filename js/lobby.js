@@ -165,9 +165,14 @@ async function startGame() {
   deck.forEach((q, i) => {
     qs[i] = { id: q.id, cat: q.cat, q: q.q, pts: q.pts, temps: q.temps };
     if (q.champs) qs[i].champs = q.champs;   // intitulés des champs, sans les réponses
+    if (q.scene) qs[i].scene = q.scene;      // mini-jeu « Confusion horaire » : la scène est publiée pour que tout le monde voie la même
   });
   try {
-    await set(ref(db, `rooms/${code}/questions`), qs);
+    try { await set(ref(db, `rooms/${code}/questions`), qs); }
+    catch (e) {   // règles de la base pas encore à jour (pas de champ « scene ») : on publie sans, chaque joueur lit alors la scène dans sa banque locale
+      console.warn(e); Object.values(qs).forEach(q => { delete q.scene; });
+      await set(ref(db, `rooms/${code}/questions`), qs);
+    }
     await update(ref(db, `rooms/${code}/meta`), { phase: 'questions', startAt: serverTimestamp() });
   } catch (e) { console.error(e); showError('Impossible de lancer la partie.'); }
 }
