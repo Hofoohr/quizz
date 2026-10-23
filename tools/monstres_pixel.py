@@ -25,6 +25,7 @@ IMG_DIR = ROOT / "img" / "monstres"
 API = "https://api.dofusdb.fr"
 PTS, TEMPS = 6, 30   # 30 s ; le plus rapide à trouver gagne le plus de points (6 pour le 1er)
 PAGE = 50
+SUPER_RACES_EXCLUES = {48}   # 48 = « Créatures des raids »
 PAR_FAMILLE = 2     # monstres gardés par famille (hors boss)
 EXCLUS = {"Psychopathe"}   # monstres retirés à la demande (ils sont sautés : le suivant du tirage les remplace)
 
@@ -52,6 +53,17 @@ def tous_les_monstres():
             return out
 
 
+def races_exclues():
+    """Familles (races) à écarter : celles de la super-famille « Créatures des raids »."""
+    out, skip = set(), 0
+    while True:
+        r = get("monster-races", {"$limit": PAGE, "$skip": skip, "$select[]": ["id", "superRaceId"]})
+        out |= {x["id"] for x in r["data"] if x.get("superRaceId") in SUPER_RACES_EXCLUES}
+        skip += len(r["data"])
+        if not r["data"] or skip >= r["total"]:
+            return out
+
+
 def nom_fichier(mid):
     return hashlib.sha1(f"monstre-{mid}".encode()).hexdigest()[:10] + ".png"
 
@@ -73,11 +85,12 @@ def telecharger(m):
 def main():
     IMG_DIR.mkdir(parents=True, exist_ok=True)
     monstres = tous_les_monstres()
-    # candidats : nom non vide et sans « ? », image, jamais une créature de quête (isQuestMonster) ni un archimonstre (isMiniBoss)
+    raids = races_exclues()
+    # candidats : nom non vide et sans « ? », image, jamais une créature de quête (isQuestMonster) ni un archimonstre (isMiniBoss), ni une créature de raid (super-famille 48)
     valides = []
     for m in monstres:
         nom = " ".join(((m.get("name") or {}).get("fr") or "").split())
-        if nom and "?" not in nom and m.get("img") and m.get("grades") and not m.get("isQuestMonster") and not m.get("isMiniBoss") and nom not in EXCLUS:
+        if nom and "?" not in nom and m.get("img") and m.get("grades") and not m.get("isQuestMonster") and not m.get("isMiniBoss") and m.get("race") not in raids and nom not in EXCLUS:
             valides.append((nom, m))
     valides.sort(key=lambda t: t[1]["id"])   # à nom égal, on garde le plus ancien
     items, vus, noms = [], {}, set()
@@ -117,7 +130,7 @@ def main():
             if pris >= PAR_FAMILLE:
                 break
             pris += accepter(nom, m)
-    print(f"{len(monstres)} monstres, {len(valides)} valides, {nb_boss} boss, {len(familles)} familles", file=sys.stderr)
+    print(f"{len(monstres)} monstres, {len(raids)} familles de raids écartées, {len(valides)} valides, {nb_boss} boss, {len(familles)} familles", file=sys.stderr)
     random.Random(2026).shuffle(items)
     lignes = ["    " + json.dumps(i, ensure_ascii=False) + "," for i in items]
     (ROOT / "js/questions/monstres-pixel.js").write_text(
