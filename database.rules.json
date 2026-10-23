@@ -23,10 +23,19 @@
           ".read": "auth != null",
           "$uid": {
             // Chacun gère son propre joueur ; on ne peut s'inscrire que dans le salon d'attente.
-            ".write": "auth != null && auth.uid === $uid && (!newData.exists() || data.exists() || root.child('rooms/' + $code + '/meta/phase').val() === 'lobby')",
+            ".write": "auth != null && ((auth.uid === $uid && !root.child('rooms/' + $code + '/bans/' + $uid).exists() && (!newData.exists() || data.exists() || root.child('rooms/' + $code + '/meta/phase').val() === 'lobby')) || (!newData.exists() && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid && root.child('rooms/' + $code + '/meta/phase').val() === 'lobby'))",
             ".validate": "newData.hasChildren(['name'])",
             "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" },
             "$other": { ".validate": false }
+          }
+        },
+
+        // Joueurs exclus par le chef dans la salle d'attente (bans/uid = true) : ils ne peuvent plus se réinscrire.
+        "bans": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+            ".validate": "newData.isBoolean()"
           }
         },
 

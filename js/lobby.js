@@ -71,6 +71,7 @@ async function joinRoom() {
       code = c; playerRef = ref(db, `rooms/${c}/players/${uid}`);
       return enterRoom();
     }
+    if ((await get(ref(db, `rooms/${c}/bans/${uid}`))).exists()) { showError("Le chef t'a exclu de ce salon."); return; }
     const pSnap = await get(ref(db, `rooms/${c}/players`));
     if (pSnap.exists() && Object.keys(pSnap.val()).length >= MAX_PLAYERS) { showError('Le salon est complet.'); return; }
     code = c;
@@ -79,13 +80,30 @@ async function joinRoom() {
   } catch (e) { console.error(e); showError('Impossible de rejoindre (salon complet ?).'); }
 }
 
+let seenSelf = false;
+// Le chef nous a exclus du salon : retour à l'accueil.
+function kicked() {
+  unsubs.forEach(u => u()); unsubs = []; Chat.stop();
+  try { onDisconnect(playerRef).cancel(); } catch (e) {}
+  store('room', null);
+  code = null; meta = null; players = {}; playerRef = null; started = false; seenSelf = false;
+  showScreen('home');
+  showError("Le chef t'a exclu du salon.");
+}
+
 function enterRoom() {
   started = false;
   store('room', code);
   $('room-code').textContent = code;
   showScreen('lobby');
   unsubs.push(onValue(ref(db, `rooms/${code}/meta`), s => { meta = s.val(); render(); }));
-  unsubs.push(onValue(ref(db, `rooms/${code}/players`), s => { players = s.val() || {}; render(); }));
+  seenSelf = false;
+  unsubs.push(onValue(ref(db, `rooms/${code}/players`), s => {
+    players = s.val() || {};
+    if (players[uid]) seenSelf = true;
+    else if (seenSelf && meta && meta.phase === 'lobby') return kicked();   // le chef nous a retirés du salon d'attente
+    render();
+  }));
   Chat.start({ code, uid, name: () => (players[uid] && players[uid].name) || '?' });
 }
 
@@ -132,7 +150,7 @@ function render() {
   }
   const isHost = meta.hostUid === uid;
   $('players').innerHTML = ids.map(id =>
-    `<li>${id === meta.hostUid ? '👑 ' : ''}${esc(players[id].name)}${id === uid ? ' <small>(toi)</small>' : ''}</li>`).join('');
+    `<li><span>${id === meta.hostUid ? '👑 ' : ''}${esc(players[id].name)}${id === uid ? ' <small>(toi)</small>' : ''}</span>${isHost && id !== uid ? `<button class="kick" data-id="${esc(id)}" title="Exclure ce joueur" aria-label="Exclure ${esc(players[id].name)}">✕ Exclure</button>` : ''}</li>`).join('');
   $('count').textContent = `${ids.length} / ${MAX_PLAYERS}`;
   $('host-box').hidden = !isHost;
   $('wait-msg').hidden = isHost;
@@ -220,6 +238,17 @@ document.querySelectorAll('input[name="game"]').forEach(r => {
   };
 });
 $('leave').onclick = leaveRoom;
+// Le chef exclut un joueur du salon d'attente (il ne peut pas revenir avec le même navigateur).
+$('players').addEventListener('click', async e => {
+  const b = e.target.closest('.kick');
+  if (!b || !meta || meta.hostUid !== uid || meta.phase !== 'lobby') return;
+  const id = b.dataset.id;
+  if (!confirm(`Exclure ${players[id] ? players[id].name : 'ce joueur'} du salon ?`)) return;
+  try {
+    await set(ref(db, `rooms/${code}/bans/${id}`), true);
+    await remove(ref(db, `rooms/${code}/players/${id}`));
+  } catch (err) { console.error(err); showError("Impossible d'exclure ce joueur."); }
+});
 document.querySelectorAll('.leave-game').forEach(b => { b.onclick = leaveGame; });
 // Le chef relance une partie dans le même salon : on efface la partie précédente et tout le monde revient dans la salle d'attente.
 async function replay() {

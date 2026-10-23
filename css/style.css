@@ -32,6 +32,9 @@ fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 1.2rem}
 .join{display:flex;gap:.6rem} .join input{margin:0;text-transform:uppercase;text-align:center;letter-spacing:.3em;font-weight:700}
 .code{font-size:3rem;font-weight:800;letter-spacing:.4em;text-align:center;color:var(--accent);margin:.2rem 0 1rem}
 #players,#started-players{list-style:none;padding:0;margin:0 0 1rem}
+#players li{display:flex;justify-content:space-between;align-items:center;gap:.6rem}
+#players li span{min-width:0;overflow-wrap:anywhere}
+.kick{flex:none;padding:.25rem .6rem;border:1px solid var(--bad);border-radius:6px;background:none;color:var(--bad);font:inherit;font-size:.85rem;cursor:pointer}
 #players li,#started-players li{padding:.5rem .7rem;margin-bottom:.4rem;background:var(--bg);border:1px solid var(--line);border-radius:8px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 #error{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);background:var(--bad);color:#fff;padding:.7rem 1.2rem;border-radius:8px;max-width:90%}
