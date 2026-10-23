@@ -123,7 +123,7 @@ def main():
         items.append({
             "q": f"Quels sont les 2 succès du donjon « {donjons[boss][0]} », ainsi que son succès spécial ?",
             "champs": [["Succès 1", challenges[ch[propres[0]]][0]], ["Succès 2", challenges[ch[propres[1]]][0]],
-                       ["Succès spécial", "{} : {}".format(*challenges[ch["Spécial"]])]],
+                       ["Succès spécial (le plus précis gagne les points)", "{} : {}".format(*challenges[ch["Spécial"]])]],
             "pts": PTS, "temps": TEMPS,
         })
 
