@@ -65,7 +65,7 @@ export default {
     ["Quels sont les 4 monstres de la dernière salle du donjon « Antre du Korriandre » ?", "Korriandre, Fongeur, Mérulette, Dramanite", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Camp du Comte Razof » ?", "Viandargh, Crâmbo, Nemroz, Comte Razof", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Antichambre des Gloursons » ?", "Glourséleste, Meliglours, Glouragan, Glourmand", 3, 40],
-    ["Quels sont les 4 monstres de la dernière salle du donjon « Donjon de la mine de Sakaï » ?", "Grolloum, Gobus, Perkü, Marôdeur", 3, 40],
+    ["Quels sont les 4 monstres de la dernière salle du donjon « Donjon de la mine de Sakaï » ?", "Grolloum, Marôdeur, Perkü, Sapeur", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Cavernes du Kolosso » ?", "Kolosso, Professeur Xa, Blérom, Croleur", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Pyramide d'Ombre » ?", "Ombre, Caznoar, Sombléro, Noctulule", 3, 40],
     ["Quels sont les 4 monstres de la dernière salle du donjon « Temple du dieu Kao » ?", "Prêtresse de Kao, Pralicienne, Torréfactueur, Chocoligarque", 3, 40],

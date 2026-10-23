@@ -15,7 +15,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 const fieldsOf = q => (q && q.champs ? Object.values(q.champs) : null);
 const inputs = () => [...document.querySelectorAll('#p-fields input')];
 let running = false, ctx = null, list = [], sched = [];
-let skips = {}, offSkips = null, ready = {}, offReady = null, offPlayers = null, players = {};
+let skipSent = null, skips = {}, offSkips = null, ready = {}, offReady = null, offPlayers = null, players = {};
 let timer = null, saveTimer = null, cur = null, lockedFor = null, lastSaved = {}, finishing = false;
 
 // Image d'une question « carte » : elle est dans la banque locale (l'id publié suffit à la retrouver), pas dans la base.
@@ -153,18 +153,18 @@ function buildSched() {
 function renderReady() {
   if (cur === null || !ctx) return;
   const mine = !!(ready[cur] && ready[cur][ctx.uid]);
-  const others = Object.keys(players).filter(id => id !== ctx.hostUid);
-  const done = others.filter(id => ready[cur] && ready[cur][id]);
-  const all = others.length > 0 && done.length === others.length;
-  $('p-ready').hidden = ctx.isHost;
+  const ids = Object.keys(players);   // le chef aussi peut se mettre prêt
+  const done = ids.filter(id => ready[cur] && ready[cur][id]);
+  const all = ids.length > 0 && done.length === ids.length;
+  $('p-ready').hidden = false;
   $('p-ready').classList.toggle('on', mine);
   $('p-ready').textContent = mine ? "✅ Prêt à passer à la question suivante (annuler)" : "✋ Prêt à passer à la question suivante";
-  $('p-readyinfo').hidden = !ctx.isHost || !others.length;
-  $('p-readyinfo').textContent = `✋ Prêts : ${done.length} / ${others.length}` + (all ? ' — tout le monde est prêt !' : '');
-  $('p-skip').classList.toggle('go', ctx.isHost && all);
+  $('p-readyinfo').hidden = !ids.length;
+  $('p-readyinfo').textContent = `✋ Prêts : ${done.length} / ${ids.length}` + (all ? ' — tout le monde est prêt, on passe !' : '');
+  if (all && ctx.isHost && skips[cur] == null && skipSent !== cur && sched[cur] && serverNow() < sched[cur].end) { skipSent = cur; skipQuestion(); }   // tout le monde est prêt : le chef (qui a le droit d'écrire) passe la question
 }
 $('p-ready').onclick = () => {
-  if (cur === null || !ctx || ctx.isHost) return;
+  if (cur === null || !ctx) return;
   const on = !(ready[cur] && ready[cur][ctx.uid]);
   set(ref(db, `rooms/${ctx.code}/ready/${cur}/${ctx.uid}`), on ? true : null).catch(console.error);
 };
@@ -216,7 +216,7 @@ $('p-fields').addEventListener('input', onType);
 
 export async function enter(c) {
   if (running) return;
-  running = true; ctx = c; cur = null; lockedFor = null; lastSaved = {}; finishing = false; skips = {};
+  running = true; ctx = c; cur = null; lockedFor = null; lastSaved = {}; finishing = false; skips = {}; skipSent = null;
   try {
     await clockReady;
     const snap = await get(ref(db, `rooms/${ctx.code}/questions`));
