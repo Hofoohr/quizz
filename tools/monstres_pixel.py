@@ -5,7 +5,7 @@ Usage : python3 tools/monstres_pixel.py
 Écrit : js/questions/monstres-pixel.js   et   img/monstres/*.png
 
 Les monstres viennent de DofusDB (api.dofusdb.fr) : on garde ceux qui ont un nom unique, sans « ? », une image non vide, et qui ne sont pas des créatures de quêtes (isQuestMonster).
-250 monstres sont tirés au hasard (graine fixe). Le nom du fichier image est un code (empreinte), pour ne pas révéler le nom.
+Tous les candidats sont gardés (mélangés avec une graine fixe). Le nom du fichier image est un code (empreinte), pour ne pas révéler le nom.
 Les illustrations appartiennent à Ankama ; DofusDB en est la source.
 """
 import hashlib
@@ -23,7 +23,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 IMG_DIR = ROOT / "img" / "monstres"
 API = "https://api.dofusdb.fr"
-NOMBRE = 250
+NOMBRE = 10_000   # tous les candidats (la liste est limitée par les filtres, pas par ce nombre)
 PTS, TEMPS = 6, 30   # 30 s ; le plus rapide à trouver gagne le plus de points (6 pour le 1er)
 PAGE = 50
 EXCLUS = {"Psychopathe"}   # monstres retirés à la demande (ils sont sautés : le suivant du tirage les remplace)
