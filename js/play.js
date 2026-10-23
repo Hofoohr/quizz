@@ -210,7 +210,7 @@ function onType() {
   const i = cur;
   saveTimer = setTimeout(() => saveNow(i), SAVE_DELAY_MS);
 }
-$('p-skip').onclick = skipQuestion;
+$('p-skip').onclick = () => { if (confirm('Passer la question pour tout le monde ?')) skipQuestion(); };   // le passage automatique (tout le monde prêt) ne demande rien
 $('p-answer').addEventListener('input', onType);
 $('p-fields').addEventListener('input', onType);
 
