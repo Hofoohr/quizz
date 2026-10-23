@@ -4,7 +4,7 @@
 Usage : python3 tools/confusion_horaire.py
 Chaque question est une scène sur une grille isométrique de 15 × 15 cases : une Enutrof, le Comte Harebourg (à 11 cases au plus) et un % de vie.
 Le % de vie donne la confusion, qui tourne la case visée autour du lanceur (100 à 75 % : 90° horaire, 75 à 25 % : 180°, 25 à 0 % : 270° horaire : voir js/confusion.js).
-Positions et vie sont tirées au hasard ; la confusion doit rester possible (la case à cliquer est dans la grille).
+L'Enutrof est au centre de la grille ; la case du Comte et la vie sont tirées au hasard ; la confusion doit rester possible (la case à cliquer est dans la grille).
 Le joueur doit cliquer la case qui, une fois tournée, tombe sur le Comte. La bonne case est recalculée par le site (js/confusion.js).
 Images : le Comte Harebourg vient de DofusDB (api.dofusdb.fr/img/monsters/993.png). L'Enutrof est rendu par le moteur d'images d'Ankama
 (static.ankama.com/dofus/renderer) à partir de son « look » DofusDB (breeds/3 : peau 30, tête 2044, couleurs de la classe).
@@ -49,7 +49,7 @@ def scene(rng):
         if pv in (25, 75):          # les limites des tranches sont ambiguës : on les évite
             continue
         conf = conf_pour(pv)
-        e = (rng.randrange(N), rng.randrange(N))
+        e = (N // 2, N // 2)                       # l'Enutrof est toujours au milieu de la grille
         c = (rng.randrange(N), rng.randrange(N))
         t = (c[0] - e[0], c[1] - e[1])
         if t == (0, 0) or abs(t[0]) + abs(t[1]) > PORTEE_MAX:
