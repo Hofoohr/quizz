@@ -5,7 +5,7 @@ Usage : python3 tools/monstres_pixel.py
 Écrit : js/questions/monstres-pixel.js   et   img/monstres/*.png
 
 Les monstres viennent de DofusDB (api.dofusdb.fr) : on garde ceux qui ont un nom, sans « ? », une image non vide, et qui ne sont pas des créatures de quêtes (isQuestMonster).
-La liste = tous les boss + un monstre de chaque famille (race), mélangée avec une graine fixe. Le nom du fichier image est un code (empreinte), pour ne pas révéler le nom.
+La liste = tous les boss + deux monstres de chaque famille (race), sans archimonstres, mélangée avec une graine fixe. Le nom du fichier image est un code (empreinte), pour ne pas révéler le nom.
 Les illustrations appartiennent à Ankama ; DofusDB en est la source.
 """
 import hashlib
@@ -25,6 +25,7 @@ IMG_DIR = ROOT / "img" / "monstres"
 API = "https://api.dofusdb.fr"
 PTS, TEMPS = 6, 30   # 30 s ; le plus rapide à trouver gagne le plus de points (6 pour le 1er)
 PAGE = 50
+PAR_FAMILLE = 2     # monstres gardés par famille (hors boss)
 EXCLUS = {"Psychopathe"}   # monstres retirés à la demande (ils sont sautés : le suivant du tirage les remplace)
 
 
@@ -44,7 +45,7 @@ def get(path, params):
 def tous_les_monstres():
     out, skip = [], 0
     while True:
-        r = get("monsters", {"$limit": PAGE, "$skip": skip, "$select[]": ["id", "name", "img", "gfxId", "race", "grades.level", "isQuestMonster", "isBoss"]})
+        r = get("monsters", {"$limit": PAGE, "$skip": skip, "$select[]": ["id", "name", "img", "gfxId", "race", "grades.level", "isQuestMonster", "isBoss", "isMiniBoss"]})
         out += r["data"]
         skip += len(r["data"])
         if not r["data"] or skip >= r["total"]:
@@ -72,50 +73,51 @@ def telecharger(m):
 def main():
     IMG_DIR.mkdir(parents=True, exist_ok=True)
     monstres = tous_les_monstres()
-    # candidats : nom non vide et sans « ? », image, jamais une créature de quête (isQuestMonster)
+    # candidats : nom non vide et sans « ? », image, jamais une créature de quête (isQuestMonster) ni un archimonstre (isMiniBoss)
     valides = []
     for m in monstres:
         nom = " ".join(((m.get("name") or {}).get("fr") or "").split())
-        if nom and "?" not in nom and m.get("img") and m.get("grades") and not m.get("isQuestMonster") and nom not in EXCLUS:
+        if nom and "?" not in nom and m.get("img") and m.get("grades") and not m.get("isQuestMonster") and not m.get("isMiniBoss") and nom not in EXCLUS:
             valides.append((nom, m))
     valides.sort(key=lambda t: t[1]["id"])   # à nom égal, on garde le plus ancien
-    choisis, noms = [], set()
-    def prendre(nom, m):
-        if nom not in noms:
-            noms.add(nom); choisis.append((nom, m))
-    for nom, m in valides:                    # 1) tous les boss
-        if m.get("isBoss"):
-            prendre(nom, m)
-    familles = {}
-    for nom, m in valides:                    # 2) un monstre (le plus ancien qui n'est pas un boss) de chaque famille (race)
-        if not m.get("isBoss") and (m.get("race") or 0) > 0:
-            familles.setdefault(m["race"], (nom, m))
-    for nom, m in familles.values():
-        prendre(nom, m)
-    print(f"{len(monstres)} monstres, {len(valides)} valides, {sum(1 for _, m in choisis if m.get('isBoss'))} boss, {len(familles)} familles", file=sys.stderr)
-    choisis.sort(key=lambda t: t[1]["id"])   # ordre des identifiants : en cas d'image identique, c'est le monstre le plus ancien qui est gardé
-    candidats = choisis
-    items, vus = [], {}
-    for nom, m in candidats:
+    items, vus, noms = [], {}, set()
+
+    def accepter(nom, m):
+        """Télécharge l'image et garde le monstre, sauf nom déjà pris, image absente ou identique à celle d'un autre monstre."""
+        if nom in noms:
+            return False
         fichier = IMG_DIR / nom_fichier(m["id"])
-        if fichier.exists():
-            ok = True
-        else:
+        if not fichier.exists():
             im = telecharger(m)
-            ok = im is not None
-            if ok:
-                im.save(fichier, optimize=True)
-        if not ok:
-            continue
+            if im is None:
+                return False
+            im.save(fichier, optimize=True)
         # Image identique à celle d'un autre monstre (variante qui réutilise le dessin du monstre de base) : question ambiguë, on la saute.
         empreinte = hashlib.md5(fichier.read_bytes()).hexdigest()
         if empreinte in vus:
             print(f"  image identique : « {nom} » = « {vus[empreinte]} », ignoré", file=sys.stderr)
             fichier.unlink()
-            continue
-        vus[empreinte] = nom
+            return False
+        vus[empreinte] = nom; noms.add(nom)
         items.append({"q": "Quel est ce monstre ? Tape son nom exact : l'image devient plus nette avec le temps, le plus rapide gagne le plus de points !",
                       "nom": nom, "sprite": f"img/monstres/{fichier.name}", "pts": PTS, "temps": TEMPS})
+        return True
+
+    for nom, m in valides:                    # 1) tous les boss (du plus ancien au plus récent)
+        if m.get("isBoss"):
+            accepter(nom, m)
+    nb_boss = len(items)
+    familles = {}
+    for nom, m in valides:                    # 2) les PAR_FAMILLE plus anciens monstres (qui ne sont pas des boss) de chaque famille (race)
+        if not m.get("isBoss") and (m.get("race") or 0) > 0:
+            familles.setdefault(m["race"], []).append((nom, m))
+    for race in sorted(familles):
+        pris = 0
+        for nom, m in familles[race]:
+            if pris >= PAR_FAMILLE:
+                break
+            pris += accepter(nom, m)
+    print(f"{len(monstres)} monstres, {len(valides)} valides, {nb_boss} boss, {len(familles)} familles", file=sys.stderr)
     random.Random(2026).shuffle(items)
     lignes = ["    " + json.dumps(i, ensure_ascii=False) + "," for i in items]
     (ROOT / "js/questions/monstres-pixel.js").write_text(
