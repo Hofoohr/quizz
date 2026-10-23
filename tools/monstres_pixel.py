@@ -25,9 +25,10 @@ IMG_DIR = ROOT / "img" / "monstres"
 API = "https://api.dofusdb.fr"
 PTS, TEMPS = 6, 30   # 30 s ; le plus rapide à trouver gagne le plus de points (6 pour le 1er)
 PAGE = 50
-SUPER_RACES_EXCLUES = {48, 24}   # 48 = « Créatures des raids », 24 = « Créatures de Nowel » (monstres des quêtes de Nowel)
+SUPER_RACES_EXCLUES = {48, 24, 15}   # 48 = « Créatures des raids », 24 = « Créatures de Nowel », 15 = « Protecteurs des ressources »
+PREFIXE_RACES_EXCLUES = "Invocations de classe"   # familles « Invocations de classe Osamodas », « … Sacrieur », etc.
 PAR_FAMILLE = 2     # monstres gardés par famille (hors boss)
-EXCLUS = {"Psychopathe"}   # monstres retirés à la demande (ils sont sautés : le suivant du tirage les remplace)
+EXCLUS = {"Psychopathe", "Sac Animé", "Lapino"}   # monstres retirés à la demande (ils sont sautés : le suivant du tirage les remplace)
 
 
 def get(path, params):
@@ -54,11 +55,12 @@ def tous_les_monstres():
 
 
 def races_exclues():
-    """Familles (races) à écarter : celles des super-familles « Créatures des raids » et « Créatures de Nowel »."""
+    """Familles (races) à écarter : super-familles raids, Nowel et protecteurs des ressources, et invocations de classes."""
     out, skip = set(), 0
     while True:
-        r = get("monster-races", {"$limit": PAGE, "$skip": skip, "$select[]": ["id", "superRaceId"]})
-        out |= {x["id"] for x in r["data"] if x.get("superRaceId") in SUPER_RACES_EXCLUES}
+        r = get("monster-races", {"$limit": PAGE, "$skip": skip, "$select[]": ["id", "name.fr", "superRaceId"]})
+        out |= {x["id"] for x in r["data"] if x.get("superRaceId") in SUPER_RACES_EXCLUES
+                or ((x.get("name") or {}).get("fr") or "").startswith(PREFIXE_RACES_EXCLUES)}
         skip += len(r["data"])
         if not r["data"] or skip >= r["total"]:
             return out
