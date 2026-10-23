@@ -71,13 +71,15 @@ async function joinRoom() {
       code = c; playerRef = ref(db, `rooms/${c}/players/${uid}`);
       return enterRoom();
     }
-    if ((await get(ref(db, `rooms/${c}/bans/${uid}`))).exists()) { showError("Le chef t'a exclu de ce salon."); return; }
+    let banni = false;
+    try { banni = (await get(ref(db, `rooms/${c}/bans/${uid}`))).exists(); } catch (e) { console.warn(e); }   // règles de la base pas encore à jour : on ignore la liste des exclus
+    if (banni) { showError("Le chef t'a exclu de ce salon."); return; }
     const pSnap = await get(ref(db, `rooms/${c}/players`));
     if (pSnap.exists() && Object.keys(pSnap.val()).length >= MAX_PLAYERS) { showError('Le salon est complet.'); return; }
     code = c;
     await joinAsPlayer(name);
     enterRoom();
-  } catch (e) { console.error(e); showError('Impossible de rejoindre (salon complet ?).'); }
+  } catch (e) { console.error(e); showError('Impossible de rejoindre le salon' + (e && e.code ? ` (${e.code})` : '') + '. Vérifie le code et réessaie.'); }
 }
 
 let seenSelf = false;
