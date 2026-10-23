@@ -4,7 +4,7 @@
 Usage : python3 tools/monstres_pixel.py
 Écrit : js/questions/monstres-pixel.js   et   img/monstres/*.png
 
-Les monstres viennent de DofusDB (api.dofusdb.fr) : on garde ceux qui ont un nom unique, sans « ? », et une image non vide.
+Les monstres viennent de DofusDB (api.dofusdb.fr) : on garde ceux qui ont un nom unique, sans « ? », une image non vide, et qui ne sont pas des créatures de quêtes (isQuestMonster).
 250 monstres sont tirés au hasard (graine fixe). Le nom du fichier image est un code (empreinte), pour ne pas révéler le nom.
 Les illustrations appartiennent à Ankama ; DofusDB en est la source.
 """
@@ -26,6 +26,7 @@ API = "https://api.dofusdb.fr"
 NOMBRE = 250
 PTS, TEMPS = 6, 30   # 30 s ; le plus rapide à trouver gagne le plus de points (6 pour le 1er)
 PAGE = 50
+EXCLUS = {"Psychopathe"}   # monstres retirés à la demande (ils sont sautés : le suivant du tirage les remplace)
 ID_MAX = 1300        # bestiaire classique : au-delà, ce sont surtout des variantes de donjons et d'événements
 
 
@@ -45,7 +46,7 @@ def get(path, params):
 def tous_les_monstres():
     out, skip = [], 0
     while True:
-        r = get("monsters", {"$limit": PAGE, "$skip": skip, "$select[]": ["id", "name", "img", "gfxId", "race", "grades.level"]})
+        r = get("monsters", {"$limit": PAGE, "$skip": skip, "$select[]": ["id", "name", "img", "gfxId", "race", "grades.level", "isQuestMonster"]})
         out += r["data"]
         skip += len(r["data"])
         if not r["data"] or skip >= r["total"]:
@@ -76,7 +77,7 @@ def main():
     par_nom = {}
     for m in monstres:
         nom = " ".join(((m.get("name") or {}).get("fr") or "").split())
-        if not nom or "?" in nom or not m.get("img") or not m.get("grades"):
+        if not nom or "?" in nom or not m.get("img") or not m.get("grades") or m.get("isQuestMonster"):   # on écarte les créatures de quêtes
             continue
         par_nom.setdefault(nom, []).append(m)
     # un seul monstre par nom (le plus ancien) et seulement le bestiaire « classique » (identifiants < ID_MAX) : des monstres connus des joueurs
@@ -87,6 +88,8 @@ def main():
     for nom, m in candidats:
         if len(items) >= NOMBRE:
             break
+        if nom in EXCLUS:
+            continue
         fichier = IMG_DIR / nom_fichier(m["id"])
         if fichier.exists():
             ok = True
