@@ -1,0 +1,4 @@
+Images des cartes du jeu Dofus, extraites de DofusDB (https://dofusdb.fr).
+Les cartes appartiennent à Ankama. Le filigrane de DofusDB est retiré en rognant la bande du bas, puis l'image est réduite.
+Les noms de fichiers sont des codes : ils ne révèlent pas les coordonnées. Ne pas modifier à la main :
+tout est regénéré par tools/cartes_dofus.py.
