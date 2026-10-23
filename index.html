@@ -16,11 +16,16 @@
     <label class="field">Ton pseudo
       <input id="pseudo" maxlength="20" placeholder="Pseudo" autocomplete="off">
     </label>
+    <label class="chk pub"><input type="checkbox" id="make-public" checked> Salon public</label>
     <button id="create" class="btn" disabled>Créer un salon</button>
     <div class="or">ou</div>
     <div class="join">
       <input id="code" maxlength="4" placeholder="CODE" autocomplete="off">
       <button id="join" class="btn" disabled>Rejoindre</button>
+    </div>
+    <div id="open-rooms" hidden>
+      <h2>Salons ouverts</h2>
+      <ul id="open-list"></ul>
     </div>
   </section>
 

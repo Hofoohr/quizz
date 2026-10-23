@@ -6,18 +6,21 @@ export const normaliser = s => String(s ?? '').toLowerCase().replace(/œ/g, 'oe'
   .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
 export const estBonNom = (nom, saisie) => { const n = normaliser(saisie); return n !== '' && n === normaliser(nom); };
 
-// Réponse enregistrée : « ok@ms » (ms = temps écoulé depuis le début de la question) quand le monstre est trouvé.
-export const lireTrouve = t => { const m = /^ok@(\d+)$/.exec(String(t ?? '')); return m ? +m[1] : null; };
+// Réponse enregistrée : « ok@ms:essais » quand le monstre est trouvé (ms = temps écoulé depuis le début de la question), « no:essais » sinon.
+export const lireTrouve = t => { const m = /^ok@(\d+)(?::\d+)?$/.exec(String(t ?? '')); return m ? +m[1] : null; };
+// Nombre d'essais (sert seulement à s'amuser dans la correction) ; null si inconnu.
+export const lireEssais = t => { const m = /^(?:ok@\d+:|no:)(\d+)$/.exec(String(t ?? '')); return m ? +m[1] : null; };
 
 // Points : parmi ceux qui ont trouvé, le plus rapide gagne le plus. pts × (n − rang + 1) / n, n = nombre de joueurs ; ex æquo : même rang.
-// Retourne { idJoueur: { trouve, ms, rang, points } }.
+// Retourne { idJoueur: { trouve, ms, rang, points, essais } }.
 export function classerParTemps(reponses, joueurs, pts) {
   const n = joueurs.length, rep = reponses || {}, out = {};
   joueurs.forEach(id => {
     const ms = lireTrouve(rep[id]);
-    if (ms === null) { out[id] = { trouve: false, ms: null, rang: null, points: 0 }; return; }
+    const essais = lireEssais(rep[id]);
+    if (ms === null) { out[id] = { trouve: false, ms: null, rang: null, points: 0, essais }; return; }
     const rang = 1 + joueurs.filter(o => { const t = lireTrouve(rep[o]); return t !== null && t < ms; }).length;
-    out[id] = { trouve: true, ms, rang, points: Math.round(pts * (n - rang + 1) / n * 10) / 10 };
+    out[id] = { trouve: true, ms, rang, points: Math.round(pts * (n - rang + 1) / n * 10) / 10, essais };
   });
   return out;
 }

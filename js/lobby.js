@@ -5,6 +5,7 @@ import * as Corr from "./correction.js";
 import { melange, composer } from "./tirage.js";
 import * as Geo from "./geo.js";
 import * as Chat from "./chat.js";
+import * as Salons from "./salons.js";
 
 const MIN_PLAYERS = 1;   // mets 3 quand tu auras fini de tester seul
 const MAX_PLAYERS = 10;  // limite vérifiée par l'application (les règles de la base ne peuvent pas compter les joueurs)
@@ -48,9 +49,11 @@ async function createRoom() {
     for (let i = 0; i < 5; i++) {
       const c = randomCode();
       try {
-        await set(ref(db, `rooms/${c}/meta`), { hostUid: uid, phase: 'lobby' });
+        const visible = $('make-public').checked;
+        await set(ref(db, `rooms/${c}/meta`), { hostUid: uid, phase: 'lobby', public: visible });
         code = c;
         await joinAsPlayer(name);
+        if (visible) Salons.publish(c, name).catch(console.error);   // inscrit dans la liste des salons ouverts
         return enterRoom();
       } catch (e) { if (i === 4) throw e; }   // code déjà pris : on en tire un autre
     }
@@ -163,6 +166,7 @@ const selectedGame = () => document.querySelector('input[name="game"]:checked').
 
 async function startGeo() {
   const rounds = Geo.pickRounds(+$('geo-nb').value);
+  Salons.unpublish(code);   // la partie commence : le salon n'est plus dans la liste
   try {
     await set(ref(db, `rooms/${code}/geo`), { max: +$('geo-max').value, grace: +$('geo-grace').value, nomove: $('geo-nomove').checked, rounds });
     await update(ref(db, `rooms/${code}/meta`), { phase: 'geo', game: 'geo', startAt: serverTimestamp() });
@@ -180,6 +184,7 @@ async function startGame() {
   const m = deck.findIndex(q => q.champs);
   if (m > 0) deck.unshift(...deck.splice(m, 1));
   else if (m === -1) { const extra = melange(bank).find(q => q.champs && !deck.includes(q)); if (extra) { deck.unshift(extra); deck.splice(n); } }
+  Salons.unpublish(code);   // la partie commence : le salon n'est plus dans la liste
   // On publie les questions SANS la réponse attendue.
   const qs = {};
   deck.forEach((q, i) => {
@@ -198,6 +203,7 @@ async function startGame() {
 }
 
 async function leaveRoom() {
+  if (meta && meta.hostUid === uid) Salons.unpublish(code);
   unsubs.forEach(u => u()); unsubs = []; Chat.stop();
   try { onDisconnect(playerRef).cancel(); await remove(playerRef); } catch (e) {}
   store('room', null);
@@ -208,6 +214,7 @@ async function leaveRoom() {
 // Quitter une partie en cours (avec confirmation) pour pouvoir en lancer une nouvelle.
 async function exitRoom(endGame) {
   const c = code;
+  if (meta && meta.hostUid === uid) Salons.unpublish(c);
   unsubs.forEach(u => u()); unsubs = []; Chat.stop();
   Play.stop(); Corr.stop(); Geo.stop();
   if (endGame) {   // le chef qui part met fin à la partie : les résultats s'affichent chez les autres
@@ -260,6 +267,7 @@ async function replay() {
       'meta/phase': 'lobby', 'meta/game': null, 'meta/startAt': null
     });
   } catch (e) { console.error(e); showError('Impossible de relancer la partie.'); return; }
+  if (meta && meta.public) Salons.publish(code, (players[uid] && players[uid].name) || '?').catch(console.error);   // de retour dans la salle d'attente : visible à nouveau
   remove(ref(db, `rooms/${code}/ready`)).catch(() => {});   // à part : ne bloque pas le retour au salon si les règles n'ont pas été mises à jour
 }
 $('r-home').onclick = replay;
@@ -267,6 +275,7 @@ $('gr-home').onclick = replay;
 
 signIn().then(user => {
   uid = user.uid;
+  Salons.startList(c => { $('code').value = c; $('join').click(); }, MAX_PLAYERS);
   $('create').disabled = false;
   $('join').disabled = false;
   tryResume();

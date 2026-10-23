@@ -3,7 +3,7 @@ import { QUESTIONS } from "./questions.js";
 import { creerMonde } from "./monde.js";
 import { lireCoord } from "./carte.js";
 import { creerScene, infosScene, lireCase, lireTemps, lireScene } from "./confusion.js";
-import { estBonNom, lireTrouve, blocs, dessinerPixel, TAILLE_MAX } from "./devine.js";
+import { estBonNom, lireTrouve, lireEssais, blocs, dessinerPixel, TAILLE_MAX } from "./devine.js";
 
 const COUNTDOWN_MS = 0;      // compte à rebours avant la première question (0 = la partie démarre aussitôt)
 const PAUSE_MS = 0;          // pause entre deux questions (0 = on enchaîne directement)
@@ -49,9 +49,12 @@ function essayer() {
     $('p-answer').disabled = true; $('p-try').disabled = true;
     majPixel();
     saveNow(cur);
+    // Trouvé : on se met automatiquement « prêt ». Quand tout le monde est prêt (donc a trouvé), la question suivante arrive toute seule.
+    set(ref(db, `rooms/${ctx.code}/ready/${cur}/${ctx.uid}`), true).catch(console.error);
   } else {
     $('p-pixelmsg').className = 'hint bad'; $('p-pixelmsg').textContent = `❌ Ce n'est pas « ${saisie.trim()} » (essai ${essais}). Réessaie !`;
     $('p-answer').select();
+    saveNow(cur);   // on garde le compte des essais (affiché pour le plaisir en correction)
   }
 }
 // Affiche le sprite : pixelisé selon le temps écoulé, net une fois trouvé (ou quand le temps est écoulé).
@@ -82,7 +85,7 @@ function view(name) {
 
 // Réponse saisie : un texte, ou un objet {numéro du champ: texte} pour une question à plusieurs champs (null si vide).
 function readValue(i) {
-  if (isPixel(list[i])) return trouveMs !== null ? `ok@${trouveMs}` : null;
+  if (isPixel(list[i])) return trouveMs !== null ? `ok@${trouveMs}:${essais}` : essais ? `no:${essais}` : null;
   if (isClic(list[i])) return choix ? choix.join(',') + '@' + (choixMs ?? 0) : null;
   if (isRank(list[i])) return pin ? { 0: `${pin.x}, ${pin.y}` } : null;
   if (!fieldsOf(list[i])) return $('p-answer').value.slice(0, 200) || null;
@@ -151,7 +154,7 @@ function openQuestion(i) {
   get(ref(db, `rooms/${ctx.code}/answers/${i}/${ctx.uid}`)).then(s => {
     if (!s.exists() || cur !== i) return;
     const v = s.val();
-    if (pixel) { const t = lireTrouve(v); if (t !== null && trouveMs === null) { trouveMs = t; $('p-answer').disabled = true; $('p-try').disabled = true; majPixel(); } }
+    if (pixel) { essais = Math.max(essais, lireEssais(v) ?? 0); const t = lireTrouve(v); if (t !== null && trouveMs === null) { trouveMs = t; $('p-answer').disabled = true; $('p-try').disabled = true; majPixel(); } }
     else if (clic) { const c = lireCase(v); if (c && !choix) { choix = c; choixMs = lireTemps(v) ?? 0; sceneJeu.dessiner({ choix }); } }
     else if (rank) { const c = v && typeof v === 'object' ? lireCoord(v[0]) : null; if (c && !pin) { pin = { x: c[0], y: c[1] }; drawPin(); } }
     else if (fields) inputs().forEach((el, k) => { if (!el.value && typeof v === 'object' && v[k] != null) el.value = v[k]; });
