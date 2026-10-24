@@ -4,7 +4,23 @@
 // Nom comparé sans majuscules, accents, espaces ni ponctuation : « Bwork Archer » = « bwork  archer ! ».
 export const normaliser = s => String(s ?? '').toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae')
   .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
-export const estBonNom = (nom, saisie) => { const n = normaliser(saisie); return n !== '' && n === normaliser(nom); };
+// Vrai si a et b diffèrent d'au plus une lettre (une lettre en trop, en moins, changée, ou deux lettres voisines inversées).
+function uneFauteAuPlus(a, b) {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  const ra = a.slice(i), rb = b.slice(i);
+  if (ra.slice(1) === rb.slice(1)) return true;                                   // une lettre changée
+  if (ra.slice(1) === rb) return true;                                            // une lettre en trop dans a
+  if (ra === rb.slice(1)) return true;                                            // une lettre manquante dans a
+  return ra.length >= 2 && rb.length >= 2 && ra[0] === rb[1] && ra[1] === rb[0] && ra.slice(2) === rb.slice(2);   // deux lettres inversées
+}
+// Une faute de frappe d'une lettre est acceptée, sauf pour les noms de 3 lettres ou moins (trop de risques de confusion).
+export const estBonNom = (nom, saisie) => {
+  const n = normaliser(saisie), t = normaliser(nom);
+  return n !== '' && (n === t || (t.length >= 4 && uneFauteAuPlus(n, t)));
+};
 
 // Réponse enregistrée : « ok@ms:essais » quand le monstre est trouvé (ms = temps écoulé depuis le début de la question), « no:essais » sinon.
 export const lireTrouve = t => { const m = /^ok@(\d+)(?::\d+)?$/.exec(String(t ?? '')); return m ? +m[1] : null; };

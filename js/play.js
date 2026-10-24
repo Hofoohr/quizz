@@ -130,7 +130,7 @@ function openQuestion(i) {
   $('p-mapbox').hidden = !rank;
   const clic = isClic(q), pixel = isPixel(q);
   $('p-pixelbox').hidden = !pixel; $('p-try').hidden = !pixel; $('p-try').disabled = false;
-  trouveMs = null; essais = 0; $('p-pixelmsg').className = 'hint'; $('p-pixelmsg').textContent = 'Tape le nom exact du monstre (majuscules et accents sans importance) : autant d\'essais que tu veux !';
+  trouveMs = null; essais = 0; $('p-pixelmsg').className = 'hint'; $('p-pixelmsg').textContent = 'Tape le nom du monstre (majuscules, accents et une faute de frappe d\'une lettre sont acceptés) : autant d\'essais que tu veux !';
   if (pixel) { pixelImg = Object.assign(new Image(), { src: bankOf(q).sprite }); pixelImg.onload = () => majPixel(); majPixel(); }
   $('p-scenebox').hidden = true;   // affichée par tick() une fois l'annonce terminée
   $('p-rush').hidden = !clic;
